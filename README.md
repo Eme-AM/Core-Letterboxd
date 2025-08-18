@@ -16,7 +16,80 @@ Este es el **módulo Core** del sistema Letterboxd, funcionando como un Hub de M
 - **Discovery & Recommendations**: Búsquedas y recomendaciones personalizadas
 - **Analytics & Insights**: Dashboards y analíticas
 
-### Core (Este módulo)
+### 🎬 Letterboxd Core - Event Hub
+
+## Descripción
+
+El **Letterboxd Core** es el hub central de mensajería para la arquitectura orientada a eventos de la plataforma Letterboxd. Este módulo se encarga de recibir, validar, enrutar y reenviar eventos entre todos los módulos del sistema de manera asíncrona.
+
+## Funcionalidades Principales
+
+### 🔄 Gestión de Eventos (Asíncrona)
+- **Recepción de eventos** de otros módulos
+- **Enrutamiento inteligente** a módulos específicos o broadcast
+- **Sistema de reintentos** automático con Dead Letter Queue
+- **Persistencia** de eventos para auditoría y monitoreo
+
+### 📊 APIs REST (Síncronas)
+- **Dashboard web** para visualización de eventos
+- **APIs de búsqueda y filtrado** de eventos
+- **Gestión de reintentos manuales**
+- **Estadísticas** en tiempo real
+- **Health checks** del sistema
+
+## Arquitectura
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    LETTERBOXD CORE HUB                      │
+├─────────────────────────────────────────────────────────────┤
+│  🌐 REST APIs          │  🔄 Event Processing               │
+│  ├─ Dashboard          │  ├─ RabbitMQ Integration           │
+│  ├─ Event Search       │  ├─ Event Routing                  │
+│  ├─ Statistics         │  ├─ Retry Mechanism                │
+│  └─ Health Checks      │  └─ Dead Letter Queue              │
+├─────────────────────────────────────────────────────────────┤
+│  💾 Database (MySQL)   │  📊 Monitoring & Analytics         │
+│  ├─ Event Messages     │  ├─ Real-time Stats                │
+│  ├─ Retry Tracking     │  ├─ Performance Metrics            │
+│  └─ Error Logs         │  └─ Health Monitoring              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Configuración y Uso
+
+### Prerrequisitos
+- Java 17+
+- MySQL 8.0+
+- RabbitMQ 3.8+
+- Maven 3.6+
+
+### APIs Disponibles
+- `POST /api/core/events` - Publicar evento
+- `GET /api/core/events` - Buscar eventos con filtros
+- `GET /api/core/events/{id}` - Obtener evento específico
+- `POST /api/core/events/{id}/retry` - Reintentar evento fallido
+- `GET /api/core/events/stats` - Estadísticas de eventos
+- `GET /api/core/health` - Estado de salud del sistema
+- `GET /dashboard` - Dashboard web de monitoreo
+
+### Tipos de Eventos Soportados
+- **Usuario**: `USER_REGISTERED`, `USER_UPDATED`, `USER_DELETED`
+- **Películas**: `MOVIE_CREATED`, `MOVIE_UPDATED`, `MOVIE_DELETED`
+- **Reviews**: `REVIEW_POSTED`, `REVIEW_UPDATED`, `REVIEW_DELETED`
+- **Social**: `USER_FOLLOWED`, `USER_UNFOLLOWED`, `LIST_SHARED`
+- **Discovery**: `SEARCH_PERFORMED`, `RECOMMENDATION_GENERATED`
+- **Analytics**: `ANALYTICS_UPDATED`
+
+### Módulos Conectados
+- `usuarios` - Gestión de usuarios
+- `peliculas` - Catálogo de películas  
+- `reviews` - Reseñas y calificaciones
+- `social` - Red social y feeds
+- `discovery` - Búsqueda y recomendaciones
+- `analytics` - Análisis y métricas
+
+**Desarrollado para el curso Desarrollo de Aplicaciones II - UADE**
 **Responsabilidades del Event Hub:**
 -  Recibir eventos del resto de los módulos
 -  Enrutar eventos a los consumidores correspondientes  

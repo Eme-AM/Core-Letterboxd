@@ -14,19 +14,24 @@ import java.util.List;
 
 @Repository
 public interface EventMessageRepository extends JpaRepository<EventMessage, Long> {
-
-    List<EventMessage> findByStatus(EventStatus status);
     
-    List<EventMessage> findByStatusAndRetryCountLessThan(EventStatus status, Integer maxRetries);
+    // Búsqueda con filtros para el dashboard
+    @Query("SELECT e FROM EventMessage e WHERE " +
+           "(:eventType IS NULL OR e.eventType = :eventType) AND " +
+           "(:sourceModule IS NULL OR e.sourceModule = :sourceModule) AND " +
+           "(:status IS NULL OR e.status = :status) AND " +
+           "(:from IS NULL OR e.createdAt >= :from) AND " +
+           "(:to IS NULL OR e.createdAt <= :to)")
+    Page<EventMessage> findWithFilters(
+            @Param("eventType") String eventType,
+            @Param("sourceModule") String sourceModule,
+            @Param("status") EventStatus status,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            Pageable pageable
+    );
     
-    Page<EventMessage> findByEventType(String eventType, Pageable pageable);
-    
-    Page<EventMessage> findBySourceModule(String sourceModule, Pageable pageable);
-    
-    Page<EventMessage> findByTargetModule(String targetModule, Pageable pageable);
-    
-    Page<EventMessage> findByCorrelationId(String correlationId, Pageable pageable);
-    
+    // Búsqueda con más filtros para el EventHubService existente
     @Query("SELECT e FROM EventMessage e WHERE " +
            "(:eventType IS NULL OR e.eventType = :eventType) AND " +
            "(:sourceModule IS NULL OR e.sourceModule = :sourceModule) AND " +
@@ -36,24 +41,43 @@ public interface EventMessageRepository extends JpaRepository<EventMessage, Long
            "(:fromDate IS NULL OR e.createdAt >= :fromDate) AND " +
            "(:toDate IS NULL OR e.createdAt <= :toDate)")
     Page<EventMessage> findByFilters(
-        @Param("eventType") String eventType,
-        @Param("sourceModule") String sourceModule,
-        @Param("targetModule") String targetModule,
-        @Param("status") EventStatus status,
-        @Param("correlationId") String correlationId,
-        @Param("fromDate") LocalDateTime fromDate,
-        @Param("toDate") LocalDateTime toDate,
-        Pageable pageable
+            @Param("eventType") String eventType,
+            @Param("sourceModule") String sourceModule,
+            @Param("targetModule") String targetModule,
+            @Param("status") EventStatus status,
+            @Param("correlationId") String correlationId,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate,
+            Pageable pageable
     );
     
-    // Stats queries
-    Long countByStatus(EventStatus status);
+    // Eventos fallidos para reintento
+    List<EventMessage> findByStatusAndRetryCountLessThan(EventStatus status, int maxRetries);
     
+    // Eventos por estado
+    List<EventMessage> findByStatus(EventStatus status);
+    
+    // Estadísticas
+    long countByStatus(EventStatus status);
+    
+    @Query("SELECT COUNT(e) FROM EventMessage e WHERE e.sourceModule = :sourceModule")
+    long countBySourceModule(@Param("sourceModule") String sourceModule);
+    
+    @Query("SELECT AVG(TIMESTAMPDIFF(MICROSECOND, e.createdAt, e.processedAt)) FROM EventMessage e WHERE e.status = :status AND e.processedAt IS NOT NULL")
+    Double getAverageProcessingTimeByStatus(@Param("status") EventStatus status);
+    
+    // Eventos por procesar
+    List<EventMessage> findByStatusOrderByCreatedAtAsc(EventStatus status);
+    
+    // Búsqueda por tipo de evento
+    Page<EventMessage> findByEventType(String eventType, Pageable pageable);
+    
+    // Búsqueda por módulo origen
+    Page<EventMessage> findBySourceModule(String sourceModule, Pageable pageable);
+    
+    // Estadísticas adicionales
     @Query("SELECT COUNT(e) FROM EventMessage e WHERE e.createdAt >= :since")
     Long countEventsSince(@Param("since") LocalDateTime since);
-    
-    @Query("SELECT COUNT(e) FROM EventMessage e WHERE e.sourceModule = :module")
-    Long countBySourceModule(@Param("module") String module);
     
     @Query("SELECT AVG(FUNCTION('TIMESTAMPDIFF', SECOND, e.createdAt, e.processedAt)) " +
            "FROM EventMessage e WHERE e.status = 'DELIVERED' AND e.processedAt IS NOT NULL")
