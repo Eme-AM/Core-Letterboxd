@@ -1,0 +1,277 @@
+{
+  "rabbit_version": "3.12.0",
+  "rabbitmq_version": "3.12.0",
+  "product_name": "RabbitMQ",
+  "product_version": "3.12.0",
+  "users": [
+    {
+      "name": "guest",
+      "password_hash": "QP2CJAjrkJgBUTtTjAiV7OjHSmJkQl5l5qhtM1Fh9oc=",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": ["administrator"]
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "guest",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "topic_permissions": [],
+  "parameters": [],
+  "global_parameters": [
+    {
+      "name": "cluster_name",
+      "value": "letterboxd-cluster"
+    }
+  ],
+  "policies": [
+    {
+      "vhost": "/",
+      "name": "DLX",
+      "pattern": ".*",
+      "apply-to": "queues",
+      "definition": {
+        "message-ttl": 3600000,
+        "max-length": 10000
+      },
+      "priority": 0
+    }
+  ],
+  "queues": [
+    {
+      "name": "movies.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "letterboxd.dlx",
+        "x-dead-letter-routing-key": "movies.failed",
+        "x-message-ttl": 3600000
+      }
+    },
+    {
+      "name": "users.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "letterboxd.dlx",
+        "x-dead-letter-routing-key": "users.failed",
+        "x-message-ttl": 3600000
+      }
+    },
+    {
+      "name": "reviews.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "letterboxd.dlx",
+        "x-dead-letter-routing-key": "reviews.failed",
+        "x-message-ttl": 3600000
+      }
+    },
+    {
+      "name": "social.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "letterboxd.dlx",
+        "x-dead-letter-routing-key": "social.failed",
+        "x-message-ttl": 3600000
+      }
+    },
+    {
+      "name": "discovery.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "letterboxd.dlx",
+        "x-dead-letter-routing-key": "discovery.failed",
+        "x-message-ttl": 3600000
+      }
+    },
+    {
+      "name": "analytics.events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "letterboxd.dlx",
+        "x-dead-letter-routing-key": "analytics.failed",
+        "x-message-ttl": 3600000
+      }
+    },
+    {
+      "name": "movies.failed",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "users.failed",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "reviews.failed",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "social.failed",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "discovery.failed",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "analytics.failed",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "letterboxd.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "letterboxd.dlx",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "letterboxd.events",
+      "vhost": "/",
+      "destination": "movies.events",
+      "destination_type": "queue",
+      "routing_key": "movies.*",
+      "arguments": {}
+    },
+    {
+      "source": "letterboxd.events",
+      "vhost": "/",
+      "destination": "users.events",
+      "destination_type": "queue",
+      "routing_key": "users.*",
+      "arguments": {}
+    },
+    {
+      "source": "letterboxd.events",
+      "vhost": "/",
+      "destination": "reviews.events",
+      "destination_type": "queue",
+      "routing_key": "reviews.*",
+      "arguments": {}
+    },
+    {
+      "source": "letterboxd.events",
+      "vhost": "/",
+      "destination": "social.events",
+      "destination_type": "queue",
+      "routing_key": "social.*",
+      "arguments": {}
+    },
+    {
+      "source": "letterboxd.events",
+      "vhost": "/",
+      "destination": "discovery.events",
+      "destination_type": "queue",
+      "routing_key": "discovery.*",
+      "arguments": {}
+    },
+    {
+      "source": "letterboxd.events",
+      "vhost": "/",
+      "destination": "analytics.events",
+      "destination_type": "queue",
+      "routing_key": "analytics.*",
+      "arguments": {}
+    },
+    {
+      "source": "letterboxd.dlx",
+      "vhost": "/",
+      "destination": "movies.failed",
+      "destination_type": "queue",
+      "routing_key": "movies.failed",
+      "arguments": {}
+    },
+    {
+      "source": "letterboxd.dlx",
+      "vhost": "/",
+      "destination": "users.failed",
+      "destination_type": "queue",
+      "routing_key": "users.failed",
+      "arguments": {}
+    },
+    {
+      "source": "letterboxd.dlx",
+      "vhost": "/",
+      "destination": "reviews.failed",
+      "destination_type": "queue",
+      "routing_key": "reviews.failed",
+      "arguments": {}
+    },
+    {
+      "source": "letterboxd.dlx",
+      "vhost": "/",
+      "destination": "social.failed",
+      "destination_type": "queue",
+      "routing_key": "social.failed",
+      "arguments": {}
+    },
+    {
+      "source": "letterboxd.dlx",
+      "vhost": "/",
+      "destination": "discovery.failed",
+      "destination_type": "queue",
+      "routing_key": "discovery.failed",
+      "arguments": {}
+    },
+    {
+      "source": "letterboxd.dlx",
+      "vhost": "/",
+      "destination": "analytics.failed",
+      "destination_type": "queue",
+      "routing_key": "analytics.failed",
+      "arguments": {}
+    }
+  ]
+}

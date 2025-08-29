@@ -63,7 +63,7 @@ public interface EventMessageRepository extends JpaRepository<EventMessage, Long
     @Query("SELECT COUNT(e) FROM EventMessage e WHERE e.sourceModule = :sourceModule")
     long countBySourceModule(@Param("sourceModule") String sourceModule);
     
-    @Query("SELECT AVG(TIMESTAMPDIFF(MICROSECOND, e.createdAt, e.processedAt)) FROM EventMessage e WHERE e.status = :status AND e.processedAt IS NOT NULL")
+    @Query("SELECT AVG(CAST(e.processedAt AS double) - CAST(e.createdAt AS double)) FROM EventMessage e WHERE e.status = :status AND e.processedAt IS NOT NULL")
     Double getAverageProcessingTimeByStatus(@Param("status") EventStatus status);
     
     // Eventos por procesar
@@ -79,7 +79,7 @@ public interface EventMessageRepository extends JpaRepository<EventMessage, Long
     @Query("SELECT COUNT(e) FROM EventMessage e WHERE e.createdAt >= :since")
     Long countEventsSince(@Param("since") LocalDateTime since);
     
-    @Query("SELECT AVG(FUNCTION('TIMESTAMPDIFF', SECOND, e.createdAt, e.processedAt)) " +
+    @Query("SELECT AVG(CAST(e.processedAt AS double) - CAST(e.createdAt AS double)) " +
            "FROM EventMessage e WHERE e.status = 'DELIVERED' AND e.processedAt IS NOT NULL")
     Double getAverageProcessingTimeInSeconds();
 }

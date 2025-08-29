@@ -10,13 +10,63 @@
     "description": "A description for 'application.security.jwt.secretKey'"
   },
   {
-    "name": "application.security.jwt.secretKey",
+    "name": "jwt.secret",
     "type": "java.lang.String",
-    "description": "A description for 'application.security.jwt.secretKey'"
+    "description": "JWT secret key for token signing and verification"
   },
   {
-    "name": "application.security.jwt.secretKey",
+    "name": "jwt.expiration",
+    "type": "java.lang.Long",
+    "description": "JWT token expiration time in milliseconds"
+  },
+  {
+    "name": "letterboxd.event-hub.retry.max-attempts",
+    "type": "java.lang.Integer",
+    "description": "Maximum number of retry attempts for failed events"
+  },
+  {
+    "name": "letterboxd.event-hub.retry.delay",
+    "type": "java.lang.Long",
+    "description": "Initial delay in milliseconds between retry attempts"
+  },
+  {
+    "name": "letterboxd.event-hub.routing.default-exchange",
     "type": "java.lang.String",
-    "description": "A description for 'application.security.jwt.secretKey'"
+    "description": "Default RabbitMQ exchange for event routing"
+  },
+  {
+    "name": "letterboxd.event-hub.routing.dead-letter-exchange",
+    "type": "java.lang.String",
+    "description": "Dead letter exchange for failed events"
+  },
+  {
+    "name": "letterboxd.event-hub.queues.movies",
+    "type": "java.lang.String",
+    "description": "Queue name for movie events"
+  },
+  {
+    "name": "letterboxd.event-hub.queues.users",
+    "type": "java.lang.String",
+    "description": "Queue name for user events"
+  },
+  {
+    "name": "letterboxd.event-hub.queues.reviews",
+    "type": "java.lang.String",
+    "description": "Queue name for review events"
+  },
+  {
+    "name": "letterboxd.event-hub.queues.social",
+    "type": "java.lang.String",
+    "description": "Queue name for social events"
+  },
+  {
+    "name": "letterboxd.event-hub.queues.discovery",
+    "type": "java.lang.String",
+    "description": "Queue name for discovery events"
+  },
+  {
+    "name": "letterboxd.event-hub.queues.analytics",
+    "type": "java.lang.String",
+    "description": "Queue name for analytics events"
   }
 ]}

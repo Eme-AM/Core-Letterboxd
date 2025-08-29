@@ -1,0 +1,110 @@
+spring:
+  application:
+    name: letterboxd-core
+  
+  # Allow bean definition overriding to resolve conflicts
+  main:
+    allow-bean-definition-overriding: true
+  
+  # Database Configuration
+  datasource:
+    url: jdbc:mysql://localhost:3306/letterboxd_core?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        '[format_sql]': true
+  
+  # RabbitMQ Configuration
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    connection-timeout: 60000
+    requested-heartbeat: 60
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+          max-interval: 10000
+          multiplier: 2
+        acknowledge-mode: manual
+        prefetch: 10
+        concurrency: 5
+        max-concurrency: 10
+  
+  # Mail Configuration
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:your-email@gmail.com}
+    password: ${MAIL_PASSWORD:your-app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# Server Configuration
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# Management Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,rabbitmq
+  endpoint:
+    health:
+      show-details: always
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
+  expiration: 86400000 # 24 hours
+
+# Logging Configuration
+logging:
+  level:
+    '[com.uade.tpo.demo]': DEBUG
+    '[org.springframework.amqp]': DEBUG
+    '[org.springframework.retry]': DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/letterboxd-core.log
+
+# Custom Event Hub Configuration
+letterboxd:
+  event-hub:
+    retry:
+      max-attempts: 3
+      delay: 1000
+    routing:
+      default-exchange: letterboxd.events
+      dead-letter-exchange: letterboxd.dlx
+    queues:
+      movies: movies.events
+      users: users.events
+      reviews: reviews.events
+      social: social.events
+      discovery: discovery.events
+      analytics: analytics.events

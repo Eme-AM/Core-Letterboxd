@@ -1,9 +1,9 @@
 package com.uade.tpo.demo.service;
 
 import com.uade.tpo.demo.models.dto.HealthStatus;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Service;
@@ -12,15 +12,20 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class HealthService implements HealthIndicator {
     
     private final DataSource dataSource;
-    private final RabbitAdmin rabbitAdmin;
+    private final Optional<RabbitAdmin> rabbitAdmin;
+    
+    public HealthService(DataSource dataSource, @Autowired(required = false) RabbitAdmin rabbitAdmin) {
+        this.dataSource = dataSource;
+        this.rabbitAdmin = Optional.ofNullable(rabbitAdmin);
+    }
     
     public HealthStatus getHealthStatus() {
         long timestamp = System.currentTimeMillis();
@@ -81,8 +86,18 @@ public class HealthService implements HealthIndicator {
     
     private HealthStatus.ConnectionHealth checkRabbitMQHealth() {
         long startTime = System.currentTimeMillis();
+        
+        if (rabbitAdmin.isEmpty()) {
+            long responseTime = System.currentTimeMillis() - startTime;
+            return HealthStatus.ConnectionHealth.builder()
+                    .status("DISABLED")
+                    .message("RabbitMQ is disabled in current profile")
+                    .responseTime(responseTime)
+                    .build();
+        }
+        
         try {
-            Properties properties = rabbitAdmin.getQueueProperties("letterboxd.incoming.events");
+            Properties properties = rabbitAdmin.get().getQueueProperties("letterboxd.incoming.events");
             long responseTime = System.currentTimeMillis() - startTime;
             
             boolean isHealthy = properties != null;
@@ -106,6 +121,13 @@ public class HealthService implements HealthIndicator {
     }
     
     private HealthStatus.QueueHealth checkQueueHealth() {
+        if (rabbitAdmin.isEmpty()) {
+            return HealthStatus.QueueHealth.builder()
+                    .status("DISABLED")
+                    .queueInfos(new ArrayList<>())
+                    .build();
+        }
+        
         try {
             List<HealthStatus.QueueHealth.QueueInfo> queueInfos = new ArrayList<>();
             String[] queues = {
@@ -122,7 +144,7 @@ public class HealthService implements HealthIndicator {
             
             for (String queueName : queues) {
                 try {
-                    Properties properties = rabbitAdmin.getQueueProperties(queueName);
+                    Properties properties = rabbitAdmin.get().getQueueProperties(queueName);
                     if (properties != null) {
                         int messageCount = (Integer) properties.get("QUEUE_MESSAGE_COUNT");
                         int consumerCount = (Integer) properties.get("QUEUE_CONSUMER_COUNT");
@@ -186,11 +208,21 @@ public class HealthService implements HealthIndicator {
     private String determineOverallStatus(HealthStatus.ConnectionHealth dbHealth, 
                                         HealthStatus.ConnectionHealth rabbitHealth, 
                                         HealthStatus.QueueHealth queueHealth) {
-        if ("UNHEALTHY".equals(dbHealth.getStatus()) || "UNHEALTHY".equals(rabbitHealth.getStatus())) {
+        if ("UNHEALTHY".equals(dbHealth.getStatus())) {
             return "UNHEALTHY";
         }
         
-        if ("UNHEALTHY".equals(queueHealth.getStatus()) || 
+        // If RabbitMQ is disabled, ignore its health status
+        if (!"DISABLED".equals(rabbitHealth.getStatus()) && "UNHEALTHY".equals(rabbitHealth.getStatus())) {
+            return "UNHEALTHY";
+        }
+        
+        // If queues are disabled (RabbitMQ disabled), ignore queue health
+        if (!"DISABLED".equals(queueHealth.getStatus()) && "UNHEALTHY".equals(queueHealth.getStatus())) {
+            return "DEGRADED";
+        }
+        
+        if (!"DISABLED".equals(queueHealth.getStatus()) && 
             queueHealth.getQueueInfos().stream().anyMatch(q -> "WARNING".equals(q.getStatus()))) {
             return "DEGRADED";
         }

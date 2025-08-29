@@ -1,17 +1,20 @@
 package com.uade.tpo.demo.service;
 
 import com.uade.tpo.demo.models.objects.User;
+import com.uade.tpo.demo.models.requests.UpdateUserRequest;
 import com.uade.tpo.demo.models.responses.UserDTOReduced;
 import com.uade.tpo.demo.repository.UserRepository;
+import com.uade.tpo.demo.service.interfaces.IUserService;
 
 import org.springframework.stereotype.Service;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class UserService {
+public class UserService implements IUserService {
 
     private final UserRepository userRepository;
 
@@ -82,5 +85,61 @@ public class UserService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    // Implementation of IUserService methods
+    
+    @Override
+    public List<User> getUsers() {
+        return userRepository.findAll();
+    }
+    
+    @Override
+    public Optional<User> getUserByEmail(String email) {
+        return findByEmail(email);
+    }
+    
+    @Override
+    public Optional<User> getUserByUsername(String username) {
+        return userRepository.findByUsername(username);
+    }
+    
+    @Override
+    public void deleteUser(Long userId) {
+        userRepository.deleteById(userId);
+    }
+    
+    @Override
+    public void saveUser(User user) {
+        userRepository.save(user);
+    }
+    
+    @Override
+    public User updateUser(Principal principal, UpdateUserRequest updateUserRequest) {
+        // Basic implementation - you can enhance this as needed
+        Optional<User> userOpt = getUserByEmail(principal.getName());
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            // Update user fields from updateUserRequest
+            return userRepository.save(user);
+        }
+        throw new RuntimeException("User not found");
+    }
+    
+    @Override
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
+    
+    @Override
+    public boolean existsByUsername(String username) {
+        return userRepository.existsByUsername(username);
+    }
+    
+    @Override
+    public List<String> getUsernames() {
+        return userRepository.findAll().stream()
+                .map(this::getUserUsername)
+                .collect(Collectors.toList());
     }
 }
