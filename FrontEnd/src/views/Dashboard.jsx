@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './Dashboard.css';
 import MetricCard from '../components/MetricCard';
 import Sidebar from '../components/Sidebar';
@@ -20,7 +20,6 @@ const ChartCard = ({ title, subtitle, children }) => (
   </div>
 );
 
-// Datos hardcodeados para ejemplo
 const eventsEvolutionData = [
   { time: '00hs', value: 400 },
   { time: '03hs', value: 50 },
@@ -40,7 +39,6 @@ const eventsPerModuleData = [
   { module: 'Analytics', value: 700 },
 ];
 
-// Datos de ejemplo (reemplazar luego por datos reales desde API)
 const recentEvents = [
   { id: "evt_0005", action: "user.addFavourites", from: "Users Module", to: "Movies Module", status: "Delivered", timestamp: "2025-08-17 15:30:46" },
   { id: "evt_0004", action: "user.addFavourites", from: "Users Module", to: "Movies Module", status: "In Queue", timestamp: "2025-08-17 15:30:46" },
@@ -50,10 +48,12 @@ const recentEvents = [
 ];
 
 function Dashboard() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   return (
     <div className="dashboard-container">
-      <Sidebar />
-      <main className="dashboard-main">
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      <main className={`dashboard-main ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
         <header className="dashboard-header">
           <div className="dashboard-title-logo">
             <h1>Dashboard</h1>
@@ -94,7 +94,6 @@ function Dashboard() {
         </section>
 
         <section className="dashboard-charts">
-          {/* Events Evolution (Line Chart) */}
           <ChartCard
             title="Events Evolution"
             subtitle="Processed events tendency across the last 24hs"
@@ -110,7 +109,6 @@ function Dashboard() {
             </ResponsiveContainer>
           </ChartCard>
 
-          {/* Events Per Module (Bar Chart) */}
           <ChartCard
             title="Events Per Module"
             subtitle="Processed events distribution across the system modules"
@@ -126,10 +124,10 @@ function Dashboard() {
             </ResponsiveContainer>
           </ChartCard>
         </section>
+
         <section className="dashboard-recent-events">
           <h2 className="recent-title">Recent Events</h2>
           <p className="recent-subtitle">Last processed events by the system</p>
-
           {recentEvents.map((event, index) => (
             <EventItem key={index} {...event} />
           ))}

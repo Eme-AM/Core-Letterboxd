@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   ChevronRight,
@@ -9,10 +9,8 @@ import {
 } from "lucide-react";
 import "./Sidebar.css";
 
-function Sidebar() {
-  const [isOpen, setIsOpen] = useState(false);
+function Sidebar({ isOpen, setIsOpen }) {
   const location = useLocation();
-
   const toggleSidebar = () => setIsOpen(!isOpen);
 
   const menuItems = [
