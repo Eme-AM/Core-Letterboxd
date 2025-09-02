@@ -13,15 +13,10 @@
 .metric-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between; /* 🔑 Título a la izquierda, icono a la derecha */
   font-size: 1.3em;
   font-weight: 500;
   color: #fff;
-}
-
-.metric-header-left {
-  flex-direction: row;
-  justify-content: flex-start;
 }
 
 .metric-icon {
@@ -53,7 +48,6 @@
   background: #FF0035 !important;
   color: #fff !important;
 }
-
 
 .change-desc {
   color: #888;

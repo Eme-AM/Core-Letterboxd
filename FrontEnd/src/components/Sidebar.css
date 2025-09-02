@@ -1,4 +1,7 @@
 .sidebar {
+  position: fixed; /* 🔹 Sidebar fija al scrollear */
+  top: 0;
+  left: 0;
   height: 100vh;
   background: #121C2E;
   color: #fff;
@@ -7,6 +10,7 @@
   padding: 12px;
   transition: width 0.3s ease;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000; /* para que siempre esté encima */
 }
 
 .sidebar.collapsed {
@@ -99,12 +103,12 @@
 }
 
 .sidebar-icon svg {
-  display: block;           /* elimina inline gaps */
-  background-color: transparent !important; 
-  fill: none !important;    
+  display: block;
+  background-color: transparent !important;
+  fill: none !important;
   stroke: currentColor !important;
-  border: none !important;  /* elimina bordes raros */
-  box-shadow: none !important; /* elimina sombras que parecen fondo */
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .sidebar-text {
@@ -115,11 +119,11 @@
 }
 
 .sidebar-user {
-  margin-top: auto;
+  margin-top: auto; /* 🔹 Empuja el admin al final */
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 0;
+  padding: 12px 8px;
 }
 
 .sidebar-user-avatar {

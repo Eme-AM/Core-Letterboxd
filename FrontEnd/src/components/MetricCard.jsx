@@ -15,10 +15,11 @@ const MetricCard = ({
       className={`metric-card ${change ? changeType : ""}`} 
       style={{ width, height }}
     >
-      <div className="metric-header metric-header-left">
+      <div className="metric-header">
         <span>{title}</span>
         {icon && <span className="metric-icon">{icon}</span>}
       </div>
+
       <div className="metric-value">{value}</div>
       
       {/* Solo se renderiza si existe change */}
