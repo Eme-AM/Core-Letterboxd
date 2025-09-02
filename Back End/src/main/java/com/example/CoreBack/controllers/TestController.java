@@ -27,7 +27,7 @@ public class TestController {
         ));
 
         eventPublisher.publish(event, "event.pelicula");
-        return "Evento enviado 🚀";
+        return "Evento enviado ";
     }
 }
 
