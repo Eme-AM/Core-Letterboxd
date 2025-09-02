@@ -99,9 +99,12 @@
 }
 
 .sidebar-icon svg {
-  background: transparent !important; 
-  fill: none !important;            
-  stroke: currentColor !important; 
+  display: block;           /* elimina inline gaps */
+  background-color: transparent !important; 
+  fill: none !important;    
+  stroke: currentColor !important;
+  border: none !important;  /* elimina bordes raros */
+  box-shadow: none !important; /* elimina sombras que parecen fondo */
 }
 
 .sidebar-text {
