@@ -1,0 +1,96 @@
+.event-item {
+  background: #223148;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+}
+
+.event-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.event-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.event-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.event-id {
+  font-weight: 600;
+  font-size: 1.1em;
+}
+
+.event-action {
+  font-size: 0.85em;
+  color: #aaa;
+}
+
+.event-flow {
+  font-size: 0.9em;
+  color: #ccc;
+}
+
+.event-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.event-status {
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9em;
+  color: #fff;
+}
+
+.status-delivered {
+  background: #2ecc71;
+}
+.status-queue {
+  background: #f1c40f;
+  color: #000;
+}
+.status-failed {
+  background: #e74c3c;
+}
+.status-unknown {
+  background: #7f8c8d;
+}
+
+.event-timestamp {
+  font-size: 0.85em;
+  color: #bbb;
+}
+
+.event-view {
+  cursor: pointer;
+  color: #fff;
+  transition: color 0.2s;
+}
+.event-view:hover {
+  color: #00eaff;
+}
+.event-item {
+  background: #27496D; /* rectángulos más oscuros */
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff; /* texto blanco */
+}
+
