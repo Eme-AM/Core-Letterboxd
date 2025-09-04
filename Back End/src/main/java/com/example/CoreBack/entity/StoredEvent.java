@@ -10,29 +10,39 @@ public class StoredEvent {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // ID interno generado en el Core (UUID.randomUUID)
     private String eventId;
-    private String eventType;
-    private String source;
-    private String version;
 
+    // "user.created", "movie.created", etc.
+    private String eventType;
+
+    // De dónde viene el evento: "/users/signup", "/movies/add"...
+    private String source;
+
+    // application/json (por ahora fijo, pero guardamos por si cambia a futuro)
+    private String contentType;
+
+    // Payload completo del "data" en formato JSON
     @Column(columnDefinition = "TEXT")
     private String payload;
 
+    // Fecha y hora en que ocurrió el evento (SysDate del JSON)
     private LocalDateTime occurredAt;
 
     public StoredEvent() {}
 
-    public StoredEvent(String eventId, String eventType, String source, String version, String payload, LocalDateTime occurredAt) {
+    public StoredEvent(String eventId, String eventType, String source, String contentType, String payload, LocalDateTime occurredAt) {
         this.eventId = eventId;
         this.eventType = eventType;
         this.source = source;
-        this.version = version;
+        this.contentType = contentType;
         this.payload = payload;
         this.occurredAt = occurredAt;
     }
 
-    // getters y setters
+    // Getters & setters
     public Long getId() { return id; }
+
     public String getEventId() { return eventId; }
     public void setEventId(String eventId) { this.eventId = eventId; }
 
@@ -42,8 +52,8 @@ public class StoredEvent {
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
 
-    public String getVersion() { return version; }
-    public void setVersion(String version) { this.version = version; }
+    public String getContentType() { return contentType; }
+    public void setContentType(String contentType) { this.contentType = contentType; }
 
     public String getPayload() { return payload; }
     public void setPayload(String payload) { this.payload = payload; }
@@ -51,4 +61,3 @@ public class StoredEvent {
     public LocalDateTime getOccurredAt() { return occurredAt; }
     public void setOccurredAt(LocalDateTime occurredAt) { this.occurredAt = occurredAt; }
 }
-
