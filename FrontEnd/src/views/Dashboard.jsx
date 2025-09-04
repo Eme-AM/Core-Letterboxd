@@ -4,10 +4,10 @@ import MetricCard from '../components/MetricCard';
 import Sidebar from '../components/Sidebar';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import appLogo from '../assets/App Logo.png';
-import totalEventsPng from '../assets/totalEvents.png';
-import deliveredPng from '../assets/delivered.png';
-import failedPng from '../assets/failed.png';
-import inQueuePng from '../assets/inQueue.png';
+import totalEventsSvg from '../assets/totalEvents.svg';
+import deliveredSvg from '../assets/delivered.svg';
+import failedSvg from '../assets/failed.svg';
+import inQueueSvg from '../assets/inQueue.svg';
 import EventItem from "../components/EventItem";
 import EventDetailsModal from "../components/EventDetails"; 
 
@@ -71,27 +71,27 @@ function Dashboard() {
             title="Total Events"
             value={847}
             change="+12%"
-            icon={<img src={totalEventsPng} alt="Total Events" style={{width: 32, height: 32}} />}
+            icon={<img src={totalEventsSvg} alt="Total Events" style={{ width: 40, height: 40 }} />}
             changeType="positive"
           />
           <MetricCard
             title="Delivered"
             value={820}
             change="+8%"
-            icon={<img src={deliveredPng} alt="Delivered" style={{width: 32, height: 32}} />}
+            icon={<img src={deliveredSvg} alt="Delivered" style={{ width: 40, height: 40 }} />}
             changeType="positive"
           />
           <MetricCard
             title="Failed"
             value={22}
             change="-3%"
-            icon={<img src={failedPng} alt="Failed" style={{width: 32, height: 32}} />}
+            icon={<img src={failedSvg} alt="Failed" style={{ width: 40, height: 40 }} />}
             changeType="negative"
           />
           <MetricCard
             title="In Queue"
             value={5}
-            icon={<img src={inQueuePng} alt="In Queue" style={{width: 32, height: 32}} />}
+            icon={<img src={inQueueSvg} alt="In Queue" style={{ width: 40, height: 40 }} />}
           />
         </section>
 
@@ -131,7 +131,7 @@ function Dashboard() {
           <h2 className="recent-title">Recent Events</h2>
           <p className="recent-subtitle">Last processed events by the system</p>
           {recentEvents.map((event, index) => (
-            <div key={index} onClick={() => setSelectedEvent(event)} style={{cursor: "pointer"}}>
+            <div key={index} onClick={() => setSelectedEvent(event)} style={{ cursor: "pointer" }}>
               <EventItem {...event} />
             </div>
           ))}
