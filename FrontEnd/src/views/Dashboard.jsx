@@ -9,6 +9,7 @@ import deliveredPng from '../assets/delivered.png';
 import failedPng from '../assets/failed.png';
 import inQueuePng from '../assets/inQueue.png';
 import EventItem from "../components/EventItem";
+import EventDetailsModal from "../components/EventDetails"; 
 
 const ChartCard = ({ title, subtitle, children }) => (
   <div className="chart-card">
@@ -49,6 +50,7 @@ const recentEvents = [
 
 function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null); // evento seleccionado para modal
 
   return (
     <div className="dashboard-container">
@@ -129,10 +131,20 @@ function Dashboard() {
           <h2 className="recent-title">Recent Events</h2>
           <p className="recent-subtitle">Last processed events by the system</p>
           {recentEvents.map((event, index) => (
-            <EventItem key={index} {...event} />
+            <div key={index} onClick={() => setSelectedEvent(event)} style={{cursor: "pointer"}}>
+              <EventItem {...event} />
+            </div>
           ))}
         </section>
       </main>
+
+      {/* Modal de detalles */}
+      {selectedEvent && (
+        <EventDetailsModal
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,164 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-container {
+  background: #0d1523;
+  color: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  width: 520px;
+  max-width: 95%;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  font-family: "Montserrat", sans-serif;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  font-size: 24px;
+  font-weight: 600; /* SemiBold */
+  margin: 0;
+  font-family: "Montserrat", sans-serif;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.modal-subtitle {
+  font-size: 16px;
+  font-weight: 400; /* Regular */
+  font-family: "Montserrat", sans-serif;
+  color: #b0b8c1;
+  margin: 8px 0 16px 0;
+}
+
+.modal-status {
+  background: #19293f;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-icon {
+  background: #0f0;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-size: 14px;
+}
+
+.status-id {
+  font-weight: 600; /* SemiBold */
+  font-size: 14px;
+  font-family: "Montserrat", sans-serif;
+}
+
+.status-type {
+  font-size: 12px;
+  color: #b0b8c1;
+  font-family: "Montserrat", sans-serif;
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+.status-badge.delivered {
+  background: #2ecc71;
+  color: #fff;
+}
+.status-badge.failed {
+  background: #e74c3c;
+  color: #fff;
+}
+.status-badge.in-queue {
+  background: #f1c40f;
+  color: #000;
+}
+
+.modal-tabs {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  background: #19293f;
+  color: #b0b8c1;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+}
+
+.tab.active {
+  background: #0d1523;
+  border: 1px solid #00eaff;
+  color: #fff;
+}
+
+.modal-content.grid-2col {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 2 columnas */
+  gap: 16px 40px;
+  background: #19293f;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  color: #b0b8c1;
+  font-size: 14px;
+  font-family: "Montserrat", sans-serif;
+}
+
+.value {
+  font-weight: 600;
+  font-size: 14px;
+  font-family: "Montserrat", sans-serif;
+}
