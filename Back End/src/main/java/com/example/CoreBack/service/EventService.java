@@ -1,5 +1,6 @@
 package com.example.CoreBack.service;
 
+import com.example.CoreBack.config.RabbitConfig;
 import com.example.CoreBack.entity.EventDTO;
 import com.example.CoreBack.entity.StoredEvent;
 import com.example.CoreBack.repository.EventRepository;
@@ -50,7 +51,7 @@ public class EventService {
             StoredEvent storedEvent = new StoredEvent(
                     eventId, type, source, contentType, payloadJson, occurredAt
             );
-            eventRepository.save(storedEvent);
+            
     
             
             publisherService.publish(eventDTO, routingKey);

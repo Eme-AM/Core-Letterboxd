@@ -21,34 +21,11 @@ public class EventConsumerService {
         this.objectMapper = objectMapper;
     }
 
+    // 👉 Este es el ÚNICO que guarda en DB
     @RabbitListener(queues = CORE_ALL_QUEUE)
     public void receiveAllEvents(Map<String, Object> message) {
-        processMessage(message, "ALL");
-    }
-
-    @RabbitListener(queues = CORE_USERS_QUEUE)
-    public void receiveUserEvents(Map<String, Object> message) {
-        processMessage(message, "USERS");
-    }
-
-    @RabbitListener(queues = CORE_MOVIES_QUEUE)
-    public void receiveMovieEvents(Map<String, Object> message) {
-        processMessage(message, "MOVIES");
-    }
-
-    @RabbitListener(queues = CORE_RATINGS_QUEUE)
-    public void receiveRatingEvents(Map<String, Object> message) {
-        processMessage(message, "RATINGS");
-    }
-
-    @RabbitListener(queues = CORE_SOCIAL_QUEUE)
-    public void receiveSocialEvents(Map<String, Object> message) {
-        processMessage(message, "SOCIAL");
-    }
-
-    private void processMessage(Map<String, Object> message, String queue) {
         try {
-            System.out.println("📩 Evento recibido en [" + queue + "] : " + message);
+            System.out.println("📩 Evento recibido en [ALL] : " + message);
 
             String payloadJson = objectMapper.writeValueAsString(message);
 
@@ -56,7 +33,7 @@ public class EventConsumerService {
                     (String) message.getOrDefault("id", "unknown"),
                     (String) message.getOrDefault("type", "UNKNOWN"),
                     (String) message.getOrDefault("source", "unknown"),
-                    "1.0",
+                    "application/json",
                     payloadJson,
                     java.time.LocalDateTime.now()
             );
@@ -68,5 +45,26 @@ public class EventConsumerService {
             e.printStackTrace();
             System.err.println(" Error al procesar evento: " + e.getMessage());
         }
+    }
+
+    
+    @RabbitListener(queues = CORE_USERS_QUEUE)
+    public void receiveUserEvents(Map<String, Object> message) {
+        System.out.println("📩 Evento recibido en [USERS] : " + message);
+    }
+
+    @RabbitListener(queues = CORE_MOVIES_QUEUE)
+    public void receiveMovieEvents(Map<String, Object> message) {
+        System.out.println("📩 Evento recibido en [MOVIES] : " + message);
+    }
+
+    @RabbitListener(queues = CORE_RATINGS_QUEUE)
+    public void receiveRatingEvents(Map<String, Object> message) {
+        System.out.println("📩 Evento recibido en [RATINGS] : " + message);
+    }
+
+    @RabbitListener(queues = CORE_SOCIAL_QUEUE)
+    public void receiveSocialEvents(Map<String, Object> message) {
+        System.out.println("📩 Evento recibido en [SOCIAL] : " + message);
     }
 }

@@ -26,6 +26,7 @@ public class RabbitConfig {
     public static final String ROUTING_KEY_MOVIES = "movie.*";  // eventos de películas
     public static final String ROUTING_KEY_RATINGS = "rating.*";// eventos de ratings
     public static final String ROUTING_KEY_SOCIAL = "social.*"; // eventos de social graph
+   
 
     @Bean
     public TopicExchange exchange() {
@@ -58,6 +59,8 @@ public class RabbitConfig {
         return new Queue(CORE_SOCIAL_QUEUE, true);
     }
 
+    
+
     // Bindings
     @Bean
     public Binding bindingAll(Queue coreAllQueue, TopicExchange exchange) {
@@ -84,6 +87,7 @@ public class RabbitConfig {
         return BindingBuilder.bind(coreSocialQueue).to(exchange).with(ROUTING_KEY_SOCIAL);
     }
 
+    
     // Conversor JSON
     @Bean
     public Jackson2JsonMessageConverter converter() {
