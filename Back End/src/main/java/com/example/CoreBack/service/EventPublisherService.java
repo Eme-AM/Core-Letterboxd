@@ -16,7 +16,7 @@ public class EventPublisherService {
 
     public void publish(Object message, String routingKey) {
         rabbitTemplate.convertAndSend(RabbitConfig.EXCHANGE, routingKey, message);
-        System.out.println("✅ Evento enviado con routingKey = " + routingKey);
+        System.out.println(" Evento enviado con routingKey = " + routingKey);
     }
 }
 
