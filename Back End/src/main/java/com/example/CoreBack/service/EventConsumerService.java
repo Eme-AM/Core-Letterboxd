@@ -21,12 +21,11 @@ public class EventConsumerService {
         this.objectMapper = objectMapper;
     }
 
-    // 👉 Este es el ÚNICO que guarda en DB
+    // Guarda TODO en DB
     @RabbitListener(queues = CORE_ALL_QUEUE)
     public void receiveAllEvents(Map<String, Object> message) {
         try {
             System.out.println("📩 Evento recibido en [ALL] : " + message);
-
             String payloadJson = objectMapper.writeValueAsString(message);
 
             StoredEvent storedEvent = new StoredEvent(
@@ -39,15 +38,14 @@ public class EventConsumerService {
             );
 
             eventRepository.save(storedEvent);
-            System.out.println(" Evento guardado en DB con ID = " + storedEvent.getId());
+            System.out.println("✅ Evento guardado en DB con ID = " + storedEvent.getId());
 
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println(" Error al procesar evento: " + e.getMessage());
+            System.err.println("❌ Error al procesar evento: " + e.getMessage());
         }
     }
 
-    
     @RabbitListener(queues = CORE_USERS_QUEUE)
     public void receiveUserEvents(Map<String, Object> message) {
         System.out.println("📩 Evento recibido en [USERS] : " + message);

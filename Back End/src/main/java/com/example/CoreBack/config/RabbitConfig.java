@@ -7,6 +7,8 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.amqp.core.*;
+
 
 @Configuration
 public class RabbitConfig {
@@ -28,6 +30,7 @@ public class RabbitConfig {
     public static final String ROUTING_KEY_SOCIAL = "social.*"; // eventos de social graph
    
 
+    
     @Bean
     public TopicExchange exchange() {
         return new TopicExchange(EXCHANGE);
