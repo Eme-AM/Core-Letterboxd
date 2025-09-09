@@ -45,7 +45,7 @@
 .event-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 24px; 
 }
 
 .event-status {
@@ -60,7 +60,7 @@
   background: #2ecc71;
 }
 .status-queue {
-  background: #f1c40f;
+  background: #FFC107;
   color: #000;
 }
 .status-failed {
@@ -71,7 +71,7 @@
 }
 
 .event-timestamp {
-  font-size: 0.85em;
+  font-size: 1.1em; /* más grande */
   color: #bbb;
 }
 
@@ -79,9 +79,11 @@
   cursor: pointer;
   color: #fff;
   transition: color 0.2s;
+  font-size: 2em; /* más grande */
 }
 .event-view:hover {
   color: #00eaff;
+  filter: brightness(0) saturate(100%) invert(62%) sepia(98%) saturate(362%) hue-rotate(162deg) brightness(95%) contrast(92%);
 }
 .event-item {
   background: #27496D; /* rectángulos más oscuros */
@@ -92,5 +94,11 @@
   align-items: center;
   justify-content: space-between;
   color: #fff; /* texto blanco */
+}
+
+.event-status-icon {
+  width: 40px;
+  height: 40px;
+  display: block;
 }
 
