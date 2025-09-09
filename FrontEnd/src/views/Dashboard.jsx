@@ -131,9 +131,11 @@ function Dashboard() {
           <h2 className="recent-title">Recent Events</h2>
           <p className="recent-subtitle">Last processed events by the system</p>
           {recentEvents.map((event, index) => (
-            <div key={index} onClick={() => setSelectedEvent(event)} style={{ cursor: "pointer" }}>
-              <EventItem {...event} />
-            </div>
+            <EventItem
+              key={index}
+              {...event}
+              onView={() => setSelectedEvent(event)}
+            />
           ))}
         </section>
       </main>
