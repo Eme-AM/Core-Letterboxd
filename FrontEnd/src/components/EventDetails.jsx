@@ -12,7 +12,7 @@ function EventDetails({ event, onClose }) {
   switch (event.status) {
     case 'Delivered':
       statusIcon = deliveredSvg;
-      statusIconStyle = { filter: 'invert(62%) sepia(98%) saturate(362%) hue-rotate(90deg) brightness(95%) contrast(92%)' };
+      statusIconStyle = { filter: 'invert(56%) sepia(77%) saturate(453%) hue-rotate(90deg) brightness(92%) contrast(92%)' };
       break;
     case 'Failed':
       statusIcon = failedSvg;
@@ -20,7 +20,8 @@ function EventDetails({ event, onClose }) {
       break;
     case 'In Queue':
       statusIcon = inQueueSvg;
-      statusIconStyle = { filter: 'invert(77%) sepia(98%) saturate(7492%) hue-rotate(0deg) brightness(97%) contrast(101%)' };
+      statusIconStyle = {filter: 'invert(24%) sepia(76%) saturate(1802%) hue-rotate(359deg) brightness(103%) contrast(105%)'};
+
       break;
     default:
       statusIcon = null;
@@ -41,9 +42,9 @@ function EventDetails({ event, onClose }) {
 
         <div className="modal-status">
           <div className="status-left">
-            <span className="status-icon">
+            <span className="status-icon" style={{ marginLeft: 12 }}>
               {statusIcon && (
-                <img src={statusIcon} alt={event.status} style={{ width: 40, height: 40, ...statusIconStyle }} />
+                <img src={statusIcon} alt={event.status} style={{ width: 36, height: 36, ...statusIconStyle }} />
               )}
             </span>
             <div>
