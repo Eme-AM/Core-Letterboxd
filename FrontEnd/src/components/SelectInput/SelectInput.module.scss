@@ -1,0 +1,34 @@
+@use '../../variables' as *;
+
+.wrapper {
+    position: relative;
+    width: 287px; 
+    height: 43px;
+}
+
+.select {
+    width: 100%;
+    height: 100%;
+    background-color: $color-main;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 40px 9px 12px;
+    font-size: 18px;
+    outline: none;
+    color: $color-text-main;
+    appearance: none;
+    text-overflow: ellipsis;
+    cursor: pointer;
+
+    &::-ms-expand {
+        display: none;
+    }
+}
+
+.icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}

@@ -9,7 +9,7 @@ import deliveredSvg from '../assets/delivered.svg';
 import failedSvg from '../assets/failed.svg';
 import inQueueSvg from '../assets/inQueue.svg';
 import EventItem from "../components/EventItem";
-import EventDetailsModal from "../components/EventDetails"; 
+import EventDetailsModal from "../components/EventDetails";
 
 const ChartCard = ({ title, subtitle, children }) => (
   <div className="chart-card">
@@ -41,11 +41,46 @@ const eventsPerModuleData = [
 ];
 
 const recentEvents = [
-  { id: "evt_0005", action: "user.addFavourites", from: "Users Module", to: "Movies Module", status: "Delivered", timestamp: "2025-08-17 15:30:46" },
-  { id: "evt_0004", action: "user.addFavourites", from: "Users Module", to: "Movies Module", status: "In Queue", timestamp: "2025-08-17 15:30:46" },
-  { id: "evt_0003", action: "user.addFavourites", from: "Users Module", to: "Movies Module", status: "Failed", timestamp: "2025-08-17 15:30:46" },
-  { id: "evt_0002", action: "user.addFavourites", from: "Users Module", to: "Movies Module", status: "Delivered", timestamp: "2025-08-17 15:30:46" },
-  { id: "evt_0001", action: "user.addFavourites", from: "Users Module", to: "Movies Module", status: "Delivered", timestamp: "2025-08-17 15:30:46" },
+  {
+    id: "evt_0005", action: "user.addFavourites", from: "Users Module", to: "Movies Module", status: "Delivered", timestamp: "2025-08-17 15:30:46",
+    payload: { movie: 'movie 1' }, timeline: [
+      { name: "Created", timestamp: "2025-09-01 10:00" },
+      { name: "Processed", timestamp: "2025-09-01 10:30" },
+      { name: "Delivered", timestamp: "2025-09-01 11:00" }
+    ]
+  },
+  {
+    id: "evt_0004", action: "user.addFavourites", from: "Users Module", to: "Movies Module", status: "In Queue", timestamp: "2025-08-17 15:30:46",
+    payload: { movie: 'movie 2' }, timeline: [
+      { name: "Created", timestamp: "2025-09-01 10:00" },
+      { name: "Processed", timestamp: "2025-09-01 10:30" },
+      { name: "In Queue", timestamp: "2025-09-01 11:00" }
+    ]
+  },
+  {
+    id: "evt_0003", action: "user.addFavourites", from: "Users Module", to: "Movies Module", status: "Failed", timestamp: "2025-08-17 15:30:46",
+    payload: { movie: 'movie 3' }, timeline: [
+      { name: "Created", timestamp: "2025-09-01 10:00" },
+      { name: "Processed", timestamp: "2025-09-01 10:30" },
+      { name: "Failed", timestamp: "2025-09-01 11:00" }
+    ]
+  },
+  {
+    id: "evt_0002", action: "user.addFavourites", from: "Users Module", to: "Movies Module", status: "Delivered", timestamp: "2025-08-17 15:30:46",
+    payload: { movie: 'movie 4' }, timeline: [
+      { name: "Created", timestamp: "2025-09-01 10:00" },
+      { name: "Processed", timestamp: "2025-09-01 10:30" },
+      { name: "Delivered", timestamp: "2025-09-01 11:00" }
+    ]
+  },
+  {
+    id: "evt_0001", action: "user.addFavourites", from: "Users Module", to: "Movies Module", status: "Delivered", timestamp: "2025-08-17 15:30:46",
+    payload: { movie: 'movie 5' }, timeline: [
+      { name: "Created", timestamp: "2025-09-01 10:00" },
+      { name: "Processed", timestamp: "2025-09-01 10:30" },
+      { name: "Delivered", timestamp: "2025-09-01 11:00" }
+    ]
+  },
 ];
 
 function Dashboard() {
