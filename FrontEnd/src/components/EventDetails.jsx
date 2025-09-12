@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import "./EventDetails.css";
+import TimelineItem from "../views/TimelineItem/TimelineItem";
 
 function EventDetails({ event, onClose }) {
   if (!event) return null;
+
+  const [activeTab, setActiveTab] = useState("details");
 
   return (
     <div className="modal-overlay">
@@ -25,48 +28,94 @@ function EventDetails({ event, onClose }) {
             </div>
           </div>
           <span
-            className={`status-badge ${
-              event.status.toLowerCase().replace(" ", "-")
-            }`}
+            className={`status-badge ${event.status.toLowerCase().replace(" ", "-")
+              }`}
           >
             {event.status}
           </span>
         </div>
 
+        {/* Tabs */}
         <div className="modal-tabs">
-          <button className="tab active">Details</button>
-          <button className="tab">Payload</button>
-          <button className="tab">Timeline</button>
+          <button
+            className={`tab ${activeTab === "details" ? "active" : ""}`}
+            onClick={() => setActiveTab("details")}
+          >
+            Details
+          </button>
+          <button
+            className={`tab ${activeTab === "payload" ? "active" : ""}`}
+            onClick={() => setActiveTab("payload")}
+          >
+            Payload
+          </button>
+          <button
+            className={`tab ${activeTab === "timeline" ? "active" : ""}`}
+            onClick={() => setActiveTab("timeline")}
+          >
+            Timeline
+          </button>
         </div>
 
-        <div className="modal-content grid-2col">
-          {/* Columna izquierda */}
-          <div className="row">
-            <span className="label">Event’s ID</span>
-            <span className="value">{event.id.replace("evt_", "")}</span>
-          </div>
-          <div className="row">
-            <span className="label">Origin</span>
-            <span className="value">{event.from}</span>
-          </div>
-          <div className="row">
-            <span className="label">State</span>
-            <span className="value">{event.status}</span>
-          </div>
+        {/* Content */}
+        <div
+          className={`modal-content bg-content  ${
+            activeTab === "details" ? "grid-2col" : ""
+          }
+           `}
+        >
+          {activeTab === "details" && (
+            <>
+              {/* Columna izquierda */}
+              <div className="row">
+                <span className="label">Event’s ID</span>
+                <span className="value">{event.id.replace("evt_", "")}</span>
+              </div>
+              <div className="row">
+                <span className="label">Origin</span>
+                <span className="value">{event.from}</span>
+              </div>
+              <div className="row">
+                <span className="label">State</span>
+                <span className="value">{event.status}</span>
+              </div>
 
-          {/* Columna derecha */}
-          <div className="row">
-            <span className="label">Type</span>
-            <span className="value">{event.action}</span>
+              {/* Columna derecha */}
+              <div className="row">
+                <span className="label">Type</span>
+                <span className="value">{event.action}</span>
+              </div>
+              <div className="row">
+                <span className="label">Destination</span>
+                <span className="value">{event.to}</span>
+              </div>
+              <div className="row">
+                <span className="label">Date/Time</span>
+                <span className="value">{event.timestamp}</span>
+              </div>
+            </>
+          )}
+
+          {activeTab === "payload" && (
+            <pre className="payload-content">
+              {JSON.stringify(event.payload, null, 2)}
+            </pre>
+          )}
+
+          {activeTab === "timeline" && (<div className="timeline-wrapper">
+            {event.timeline && event.timeline.length > 0 ? (
+              event.timeline.map((t, index) => (
+                <TimelineItem
+                  key={index}
+                  name={t.name}
+                  timestamp={t.timestamp}
+                />
+              ))
+            ) : (
+              <p>No timeline data available.</p>
+            )}
           </div>
-          <div className="row">
-            <span className="label">Destination</span>
-            <span className="value">{event.to}</span>
-          </div>
-          <div className="row">
-            <span className="label">Date/Time</span>
-            <span className="value">{event.timestamp}</span>
-          </div>
+          )}
         </div>
       </div>
     </div>
