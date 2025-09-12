@@ -69,9 +69,6 @@ function EventDetails({ event, onClose }) {
         <div className="modal-status">
           <div className="status-left">
             <span className="status-icon" style={{ marginLeft: 12 }}>
-              {statusIcon && (
-                <img src={statusIcon} alt={event.status} style={{ width: 36, height: 36, ...statusIconStyle }} />
-              )}
             </span>
             <div>
               <div className="status-id">{"evt_" + event.id.toString().padStart(4, '0')}</div>
