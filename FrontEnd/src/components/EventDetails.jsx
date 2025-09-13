@@ -1,11 +1,38 @@
 import React, { useState } from "react";
 import "./EventDetails.css";
 import TimelineItem from "../views/TimelineItem/TimelineItem";
+import deliveredSvg from '../assets/delivered.svg';
+import failedSvg from '../assets/failed.svg';
+import inQueueSvg from '../assets/inQueue.svg';
+
 
 function EventDetails({ event, onClose }) {
   if (!event) return null;
 
+
   const [activeTab, setActiveTab] = useState("details");
+
+  // Selección de ícono SVG y filtro de color según status
+  let statusIcon, statusIconStyle;
+  switch (event.status) {
+    case 'Delivered':
+      statusIcon = deliveredSvg;
+      statusIconStyle = { filter: 'invert(56%) sepia(77%) saturate(453%) hue-rotate(90deg) brightness(92%) contrast(92%)' };
+      break;
+    case 'Failed':
+      statusIcon = failedSvg;
+      statusIconStyle = { filter: 'invert(34%) sepia(99%) saturate(7492%) hue-rotate(357deg) brightness(97%) contrast(101%)' };
+      break;
+    case 'In Queue':
+      statusIcon = inQueueSvg;
+      statusIconStyle = {filter: 'invert(24%) sepia(76%) saturate(1802%) hue-rotate(359deg) brightness(103%) contrast(105%)'};
+
+      break;
+    default:
+      statusIcon = null;
+      statusIconStyle = {};
+  }
+
 
   return (
     <div className="modal-overlay">
@@ -21,15 +48,20 @@ function EventDetails({ event, onClose }) {
 
         <div className="modal-status">
           <div className="status-left">
-            <span className="status-icon">✔</span>
+            <span className="status-icon" style={{ marginLeft: 12 }}>
+              {statusIcon && (
+                <img src={statusIcon} alt={event.status} style={{ width: 36, height: 36, ...statusIconStyle }} />
+              )}
+            </span>
             <div>
               <div className="status-id">{event.id}</div>
               <div className="status-type">{event.action}</div>
             </div>
           </div>
           <span
-            className={`status-badge ${event.status.toLowerCase().replace(" ", "-")
-              }`}
+
+            className={`status-badge ${event.status.toLowerCase().replace(" ", "-")}`}
+
           >
             {event.status}
           </span>

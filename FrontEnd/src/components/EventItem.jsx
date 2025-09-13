@@ -1,19 +1,35 @@
 import React from "react";
-import { FaCheckCircle, FaClock, FaTimesCircle, FaEye } from "react-icons/fa";
+import { FaEye } from "react-icons/fa";
+import deliveredSvg from '../assets/delivered.svg';
+import failedSvg from '../assets/failed.svg';
+import inQueueSvg from '../assets/inQueue.svg';
+import eyeEventItem from '../assets/eyeEventItem.svg';
 import "./EventItem.css";
 
-function EventItem({ id, action, from, to, status, timestamp }) {
-  // Selección de icono y color según status
+function EventItem({ id, action, from, to, status, timestamp, onView }) {
+  // Selección de icono SVG y filtro de color según status
   const getStatusConfig = () => {
     switch (status) {
       case "Delivered":
-        return { icon: <FaCheckCircle color="#2ecc71" size={24} />, badgeClass: "status-delivered" };
+        return {
+          icon: <img src={deliveredSvg} alt="Delivered" className="event-status-icon" style={{ filter: 'brightness(0) saturate(100%) invert(54%) sepia(77%) saturate(505%) hue-rotate(77deg) brightness(97%) contrast(101%)' }} />,
+          badgeClass: "status-delivered"
+        };
       case "In Queue":
-        return { icon: <FaClock color="#f1c40f" size={24} />, badgeClass: "status-queue" };
+        return {
+          icon: <img src={inQueueSvg} alt="In Queue" className="event-status-icon" style={{ filter: 'brightness(0) saturate(100%) invert(81%) sepia(41%) saturate(7492%) hue-rotate(359deg) brightness(101%) contrast(101%)' }} />,
+          badgeClass: "status-queue"
+        };
       case "Failed":
-        return { icon: <FaTimesCircle color="#e74c3c" size={24} />, badgeClass: "status-failed" };
+        return {
+          icon: <img src={failedSvg} alt="Failed" className="event-status-icon" style={{ filter: 'brightness(0) saturate(100%) invert(36%) sepia(99%) saturate(7492%) hue-rotate(340deg) brightness(97%) contrast(101%)' }} />,
+          badgeClass: "status-failed"
+        };
       default:
-        return { icon: <FaClock color="#95a5a6" size={24} />, badgeClass: "status-unknown" };
+        return {
+          icon: <img src={inQueueSvg} alt="Unknown" className="event-status-icon" style={{ filter: 'brightness(0) saturate(100%) invert(60%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(80%) contrast(80%)' }} />,
+          badgeClass: "status-unknown"
+        };
     }
   };
 
@@ -32,7 +48,7 @@ function EventItem({ id, action, from, to, status, timestamp }) {
       <div className="event-right">
         <span className={`event-status ${badgeClass}`}>{status}</span>
         <span className="event-timestamp">{timestamp}</span>
-        <FaEye className="event-view" size={20} />
+        <img src={eyeEventItem} alt="View Event" className="event-view" onClick={onView} style={{ cursor: "pointer" }} />
       </div>
     </div>
   );

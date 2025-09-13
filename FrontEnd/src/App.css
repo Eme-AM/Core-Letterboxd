@@ -6,6 +6,7 @@
   box-sizing: border-box;
   text-align: initial;
   background: #f5f6fa;
+  overflow-x: hidden;
 }
 
 .logo {

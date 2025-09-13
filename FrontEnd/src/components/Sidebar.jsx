@@ -54,8 +54,9 @@ function Sidebar({ isOpen, setIsOpen }) {
       </nav>
       {/* 
       <div className="sidebar-divider" />
-*/}
+      */}
       <div className="sidebar-user">
+
         <div className="sidebar-user-avatar">A</div>
         {isOpen && <span className="sidebar-user-name">Admin User</span>}
       </div>
