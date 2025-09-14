@@ -79,7 +79,7 @@ function Messages() {
         );
 
     const matchesStatus = statusFilter === '' || event.status === statusFilter;
-    const matchesModule = moduleFilter === '' || event.action === moduleFilter;
+    const matchesModule = moduleFilter === '' || event.from.replace(" Module", "") === moduleFilter || event.to.replace(" Module", "") === moduleFilter;
 
     return matchesSearch && matchesStatus && matchesModule;
   });
