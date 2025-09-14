@@ -70,9 +70,13 @@ function Messages() {
 
   ];
   const filteredEvents = events.filter(event => {
-    const matchesSearch = searchFilter === '' || Object.values(event).some(val =>
-      val.toLowerCase().includes(searchFilter.toLowerCase())
-    );
+    const matchesSearch =
+      searchFilter === '' ||
+      Object.entries(event)
+        .filter(([key]) => key !== 'payload' && key !== 'timeline')
+        .some(([_, val]) =>
+          String(val).toLowerCase().includes(searchFilter.toLowerCase())
+        );
 
     const matchesStatus = statusFilter === '' || event.status === statusFilter;
     const matchesModule = moduleFilter === '' || event.action === moduleFilter;
