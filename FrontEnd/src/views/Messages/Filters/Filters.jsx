@@ -24,8 +24,8 @@ function Filters({ searchFilter, setSearchFilter, statusFilter, setStatusFilter,
                 onChange={(e) => setModuleFilter(e.target.value)}
                 options={[
                     { label: 'Every Module', value: '' },
-                    { label: 'user.addFavourites', value: 'user.addFavourites' },
-                    { label: 'user.removeFavourites', value: 'user.removeFavourites' }
+                    { label: 'Users', value: 'Users' },
+                    { label: 'Movies', value: 'Movies' }
                 ]}
             />
         </div>
