@@ -5,16 +5,10 @@ import com.example.CoreBack.entity.StoredEvent;
 import com.example.CoreBack.repository.EventRepository;
 import com.example.CoreBack.service.EventService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.time.YearMonth;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/events")
@@ -28,22 +22,19 @@ public class EventController {
         this.eventService = eventService;
     }
 
-    // 🟦 GET lista de eventos (paginada + filtros)
+    // Lista de eventos con filtros
     @GetMapping
-public ResponseEntity<?> getAllEvents(
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size,
-        @RequestParam(required = false) String module,
-        @RequestParam(required = false) String status,
-        @RequestParam(required = false) String search
-) {
-    return ResponseEntity.ok(
-            eventService.getAllEvents(page, size, module, status, search)
-    );
-}
+    public ResponseEntity<?> getAllEvents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String module,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(eventService.getAllEvents(page, size, module, status, search));
+    }
 
-
-    
+    // Detalle de un evento
     @GetMapping("/{eventId}")
     public ResponseEntity<?> getEventDetail(@PathVariable Long eventId) {
         return eventRepository.findById(eventId)
@@ -51,7 +42,7 @@ public ResponseEntity<?> getAllEvents(
                         "eventId", event.getEventId(),
                         "type", event.getEventType(),
                         "source", event.getSource(),
-                        "status", "Delivered", // simulado
+                        "status", event.getStatus(),
                         "timeline", List.of(
                                 Map.of("step", "Received", "time", event.getOccurredAt()),
                                 Map.of("step", "Stored", "time", event.getOccurredAt().plusSeconds(2)),
@@ -62,7 +53,7 @@ public ResponseEntity<?> getAllEvents(
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    
+    // Recibir evento de otro módulo
     @PostMapping("/receive")
     public ResponseEntity<?> receiveEvent(
             @Valid @RequestBody EventDTO eventDTO,
@@ -82,19 +73,21 @@ public ResponseEntity<?> getAllEvents(
         }
     }
 
+    // Estadísticas globales
     @GetMapping("/stats")
-public ResponseEntity<?> getStats() {
-    return ResponseEntity.ok(eventService.getGlobalStats());
-}
+    public ResponseEntity<?> getStats() {
+        return ResponseEntity.ok(eventService.getGlobalStats());
+    }
 
-@GetMapping("/evolution")
-public ResponseEntity<?> getEvolution() {
-    return ResponseEntity.ok(eventService.getEvolution());
-}
+    // Evolución
+    @GetMapping("/evolution")
+    public ResponseEntity<?> getEvolution() {
+        return ResponseEntity.ok(eventService.getEvolution());
+    }
 
-@GetMapping("/per-module")
-public ResponseEntity<?> getEventsPerModule() {
-    return ResponseEntity.ok(eventService.getEventsPerModule());
-}
-
+    // Eventos por módulo
+    @GetMapping("/per-module")
+    public ResponseEntity<?> getEventsPerModule() {
+        return ResponseEntity.ok(eventService.getEventsPerModule());
+    }
 }

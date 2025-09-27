@@ -1,35 +1,29 @@
 package com.example.CoreBack.service;
 
-import com.example.CoreBack.config.RabbitConfig;
 import com.example.CoreBack.entity.EventDTO;
 import com.example.CoreBack.entity.StoredEvent;
 import com.example.CoreBack.repository.EventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import jakarta.validation.Valid;
-
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.UUID;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 @Service
 public class EventService {
 
     private final EventRepository eventRepository;
-    private final EventPublisherTest publisherService;
+    private final EventPublisherService publisherService;
     private final ObjectMapper objectMapper;
 
     public EventService(EventRepository eventRepository,
-                        EventPublisherTest publisherService,
+                        EventPublisherService publisherService,
                         ObjectMapper objectMapper) {
         this.eventRepository = eventRepository;
         this.publisherService = publisherService;
@@ -38,47 +32,39 @@ public class EventService {
 
     public StoredEvent processIncomingEvent(@Valid EventDTO eventDTO, String routingKey) {
         try {
-            
             String eventId = eventDTO.getId();
-    
-            
             String type = eventDTO.getType();
             String source = eventDTO.getSource();
             String contentType = eventDTO.getDatacontenttype();
-    
-            
             String payloadJson = objectMapper.writeValueAsString(eventDTO.getData());
-    
-            
+
             LocalDateTime occurredAt = eventDTO.getSysDate() != null
                     ? eventDTO.getSysDate()
                     : LocalDateTime.now();
-    
-            
+
             StoredEvent storedEvent = new StoredEvent(
                     eventId, type, source, contentType, payloadJson, occurredAt
             );
-            
-    
-            
+            storedEvent.setStatus("RECEIVED");
+            eventRepository.save(storedEvent);
+
             publisherService.publish(eventDTO, routingKey);
-    
+
             return storedEvent;
         } catch (Exception e) {
             throw new RuntimeException("Error procesando evento", e);
         }
     }
 
+    // Paginación y filtros
     public Map<String, Object> getAllEvents(int page, int size, String module, String status, String search) {
         Pageable pageable = PageRequest.of(page, size);
         Page<StoredEvent> events = eventRepository.findAll(pageable);
 
-        // Filtros aplicados en memoria (si querés performance, se pueden mover a query en repo)
         List<StoredEvent> filtered = events.getContent().stream()
                 .filter(e -> module == null || e.getSource().toLowerCase().contains(module.toLowerCase()))
                 .filter(e -> search == null || e.getPayload().toLowerCase().contains(search.toLowerCase()))
-                // ⚠️ status todavía es simulado porque no lo tenemos en StoredEvent
-                .filter(e -> status == null || status.equalsIgnoreCase("delivered"))
+                .filter(e -> status == null || e.getStatus().equalsIgnoreCase(status))
                 .collect(Collectors.toList());
 
         return Map.of(
@@ -89,29 +75,33 @@ public class EventService {
         );
     }
 
+    // Estadísticas globales reales
     public Map<String, Object> getGlobalStats() {
         long total = eventRepository.count();
-
-        // Si querés manejar un campo real "status" deberías agregarlo a StoredEvent.
-        long delivered = (long) (total * 0.95); // simulado por ahora
-        long failed = total - delivered;
-        long inQueue = 5; // simulado
+        long delivered = eventRepository.findAll().stream()
+                .filter(e -> "DELIVERED".equalsIgnoreCase(e.getStatus()))
+                .count();
+        long failed = eventRepository.findAll().stream()
+                .filter(e -> "FAILED".equalsIgnoreCase(e.getStatus()))
+                .count();
+        long inQueue = eventRepository.findAll().stream()
+                .filter(e -> "RECEIVED".equalsIgnoreCase(e.getStatus()))
+                .count();
 
         YearMonth thisMonth = YearMonth.now();
         YearMonth lastMonth = thisMonth.minusMonths(1);
 
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalEvents", total);
-        stats.put("delivered", delivered);
-        stats.put("failed", failed);
-        stats.put("inQueue", inQueue);
-        stats.put("thisMonth", thisMonth.toString());
-        stats.put("lastMonth", lastMonth.toString());
-
-        return stats;
+        return Map.of(
+                "totalEvents", total,
+                "delivered", delivered,
+                "failed", failed,
+                "inQueue", inQueue,
+                "thisMonth", thisMonth.toString(),
+                "lastMonth", lastMonth.toString()
+        );
     }
 
-    
+    // Evolución de eventos (últimas 24h)
     public List<Map<String, Object>> getEvolution() {
         LocalDateTime now = LocalDateTime.now();
 
@@ -137,7 +127,7 @@ public class EventService {
         return evolution;
     }
 
-   
+    // Agrupación por módulo
     public Map<String, Long> getEventsPerModule() {
         return eventRepository.findAll().stream()
                 .collect(Collectors.groupingBy(
@@ -152,5 +142,4 @@ public class EventService {
                         Collectors.counting()
                 ));
     }
-    
 }
