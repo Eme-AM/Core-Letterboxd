@@ -30,33 +30,20 @@ public class EventController {
 
     // 🟦 GET lista de eventos (paginada + filtros)
     @GetMapping
-    public ResponseEntity<?> getAllEvents(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String module,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String search
-    ) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<StoredEvent> events = eventRepository.findAll(pageable);
+public ResponseEntity<?> getAllEvents(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(required = false) String module,
+        @RequestParam(required = false) String status,
+        @RequestParam(required = false) String search
+) {
+    return ResponseEntity.ok(
+            eventService.getAllEvents(page, size, module, status, search)
+    );
+}
 
-        // Filtros simples en memoria
-        List<StoredEvent> filtered = events.getContent().stream()
-                .filter(e -> module == null || e.getSource().toLowerCase().contains(module.toLowerCase()))
-                .filter(e -> search == null || e.getPayload().toLowerCase().contains(search.toLowerCase()))
-                // status es un campo simulado en este caso
-                .filter(e -> status == null || status.equalsIgnoreCase("delivered"))
-                .collect(Collectors.toList());
 
-        return ResponseEntity.ok(Map.of(
-                "page", page,
-                "size", size,
-                "total", events.getTotalElements(),
-                "events", filtered
-        ));
-    }
-
-    // 🟦 GET detalle de un evento
+    
     @GetMapping("/{eventId}")
     public ResponseEntity<?> getEventDetail(@PathVariable Long eventId) {
         return eventRepository.findById(eventId)
@@ -75,7 +62,7 @@ public class EventController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // 🟦 POST recibir un evento nuevo
+    
     @PostMapping("/receive")
     public ResponseEntity<?> receiveEvent(
             @Valid @RequestBody EventDTO eventDTO,
@@ -83,7 +70,6 @@ public class EventController {
     ) {
         try {
             StoredEvent storedEvent = eventService.processIncomingEvent(eventDTO, routingKey);
-            eventRepository.save(storedEvent);
             return ResponseEntity.ok(Map.of(
                     "status", "received",
                     "eventId", storedEvent.getEventId()
@@ -96,55 +82,19 @@ public class EventController {
         }
     }
 
-    // 🟦 Dashboard: métricas globales
     @GetMapping("/stats")
-    public ResponseEntity<?> getStats() {
-        long total = eventRepository.count();
-        long delivered = (long) (total * 0.95); // simulado
-        long failed = total - delivered;
-        long inQueue = 5; // simulado
+public ResponseEntity<?> getStats() {
+    return ResponseEntity.ok(eventService.getGlobalStats());
+}
 
-        // Comparación este mes vs mes pasado
-        YearMonth thisMonth = YearMonth.now();
-        YearMonth lastMonth = thisMonth.minusMonths(1);
+@GetMapping("/evolution")
+public ResponseEntity<?> getEvolution() {
+    return ResponseEntity.ok(eventService.getEvolution());
+}
 
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalEvents", total);
-        stats.put("delivered", delivered);
-        stats.put("failed", failed);
-        stats.put("inQueue", inQueue);
-        stats.put("thisMonth", thisMonth.toString());
-        stats.put("lastMonth", lastMonth.toString());
+@GetMapping("/per-module")
+public ResponseEntity<?> getEventsPerModule() {
+    return ResponseEntity.ok(eventService.getEventsPerModule());
+}
 
-        return ResponseEntity.ok(stats);
-    }
-
-    // 🟦 Dashboard: evolución por hora (últimas 24hs)
-    @GetMapping("/evolution")
-    public ResponseEntity<?> getEvolution() {
-        List<Map<String, Object>> evolution = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
-
-        for (int i = 23; i >= 0; i--) {
-            evolution.add(Map.of(
-                    "hour", now.minusHours(i).getHour(),
-                    "count", new Random().nextInt(100) // simulado
-            ));
-        }
-
-        return ResponseEntity.ok(evolution);
-    }
-
-    // 🟦 Dashboard: eventos por módulo
-    @GetMapping("/per-module")
-    public ResponseEntity<?> getEventsPerModule() {
-        Map<String, Long> modules = Map.of(
-                "users", 300L,
-                "movies", 500L,
-                "discovery", 200L,
-                "analytics", 700L
-        );
-
-        return ResponseEntity.ok(modules);
-    }
 }
