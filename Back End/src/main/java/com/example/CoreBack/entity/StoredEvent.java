@@ -29,15 +29,21 @@ public class StoredEvent {
     // Fecha y hora en que ocurrió el evento (SysDate del JSON)
     private LocalDateTime occurredAt;
 
+    // Nuevo campo: estado del evento
+    @Column(nullable = false)
+    private String status = "RECEIVED"; // RECEIVED, DELIVERED, FAILED
+
     public StoredEvent() {}
 
-    public StoredEvent(String eventId, String eventType, String source, String contentType, String payload, LocalDateTime occurredAt) {
+    public StoredEvent(String eventId, String eventType, String source,
+                       String contentType, String payload, LocalDateTime occurredAt) {
         this.eventId = eventId;
         this.eventType = eventType;
         this.source = source;
         this.contentType = contentType;
         this.payload = payload;
         this.occurredAt = occurredAt;
+        this.status = "RECEIVED";
     }
 
     // Getters & setters
@@ -60,4 +66,7 @@ public class StoredEvent {
 
     public LocalDateTime getOccurredAt() { return occurredAt; }
     public void setOccurredAt(LocalDateTime occurredAt) { this.occurredAt = occurredAt; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }
