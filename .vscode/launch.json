@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-CoreBackApplication<CoreBack>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.example.CoreBack.CoreBackApplication",
+            "projectName": "CoreBack",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

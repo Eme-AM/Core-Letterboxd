@@ -1,12 +1,24 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from './views/Home';
+import Dashboard from './views/Dashboard'; 
+import Messages from './views/Messages/Messages';
+import './globals.scss';
 
+function Configuracion() {
+  return <h2>Configuracion</h2>;
+}
+
+function EventDetails() {
+  return <h2>EventDetails</h2>;
+}
+ 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/configuracion" element={<Configuracion />} />
+        <Route path="/eventdetails" element={<EventDetails />} />
+        <Route path="/messages" element={<Messages />} />
       </Routes>
     </Router>
   );
