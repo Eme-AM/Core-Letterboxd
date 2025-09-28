@@ -4,10 +4,8 @@ import com.example.CoreBack.entity.EventDTO;
 import com.example.CoreBack.entity.StoredEvent;
 import com.example.CoreBack.repository.EventRepository;
 import com.example.CoreBack.service.EventService;
+
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,15 +14,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-
-import java.time.LocalDateTime;
-import java.time.YearMonth;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/events")
@@ -51,36 +42,8 @@ public class EventController {
         @ApiResponse(responseCode = "500", description = "Error en la consulta de eventos.")
     })
     @GetMapping
-public ResponseEntity<?> getAllEvents(
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size,
-        @RequestParam(required = false) String module,
-        @RequestParam(required = false) String status,
-        @RequestParam(required = false) String search
-) {
-    return ResponseEntity.ok(
-            eventService.getAllEvents(page, size, module, status, search)
-    );
-}
-
-
-    
-    @GetMapping("/{eventId}")
-    public ResponseEntity<?> getEventDetail(@PathVariable Long eventId) {
-        return eventRepository.findById(eventId)
-                .map(event -> ResponseEntity.ok(Map.of(
-                        "eventId", event.getEventId(),
-                        "type", event.getEventType(),
-                        "source", event.getSource(),
-                        "status", "Delivered", // simulado
-                        "timeline", List.of(
-                                Map.of("step", "Received", "time", event.getOccurredAt()),
-                                Map.of("step", "Stored", "time", event.getOccurredAt().plusSeconds(2)),
-                                Map.of("step", "Delivered", "time", event.getOccurredAt().plusSeconds(5))
-                        ),
-                        "payload", event.getPayload()
-                )))
-                .orElse(ResponseEntity.notFound().build());
+    public List<StoredEvent> getAllEvents() {
+        return eventRepository.findAll();
     }
 
     // ============================================================
@@ -104,8 +67,8 @@ public ResponseEntity<?> getAllEvents(
     @PostMapping("/receive")
     public ResponseEntity<?> receiveEvent(
             @Valid @RequestBody EventDTO eventDTO,
-            @RequestParam(defaultValue = "core.routing") String routingKey
-    ) {
+            @RequestParam(defaultValue = "core.routing") String routingKey) {
+        // Lógica ya implementada
         try {
             StoredEvent storedEvent = eventService.processIncomingEvent(eventDTO, routingKey);
             return ResponseEntity.ok(Map.of(
@@ -120,19 +83,57 @@ public ResponseEntity<?> getAllEvents(
         }
     }
 
-    @GetMapping("/stats")
-public ResponseEntity<?> getStats() {
-    return ResponseEntity.ok(eventService.getGlobalStats());
-}
+    // ============================================================
+    // 3. Obtener un evento específico (placeholder)
+    // ============================================================
+    @Operation(
+        summary = "Obtener un evento específico",
+        description = "Devuelve la información de un evento a partir de su ID",
+        tags = { "Eventos" }
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Evento encontrado."),
+        @ApiResponse(responseCode = "404", description = "Evento no encontrado.")
+    })
+    @GetMapping("/{eventId}")
+    public ResponseEntity<?> getEventById(@PathVariable String eventId) {
+        // TODO: Implementar consulta por ID
+        return ResponseEntity.notFound().build();
+    }
 
-@GetMapping("/evolution")
-public ResponseEntity<?> getEvolution() {
-    return ResponseEntity.ok(eventService.getEvolution());
-}
+    // ============================================================
+    // 4. Reintentar un evento fallido (placeholder)
+    // ============================================================
+    @Operation(
+        summary = "Reintentar evento fallido",
+        description = "Vuelve a enviar un evento que no pudo ser procesado",
+        tags = { "Eventos" }
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Evento reenviado correctamente."),
+        @ApiResponse(responseCode = "400", description = "No se pudo reintentar el evento.")
+    })
+    @PostMapping("/{eventId}/retry")
+    public ResponseEntity<?> retryEvent(@PathVariable String eventId) {
+        // TODO: Implementar lógica de reintento
+        return ResponseEntity.badRequest().body(Map.of("status", "not_implemented"));
+    }
 
-@GetMapping("/per-module")
-public ResponseEntity<?> getEventsPerModule() {
-    return ResponseEntity.ok(eventService.getEventsPerModule());
-}
-
+    // ============================================================
+    // 5. Obtener el timeline de un evento (placeholder)
+    // ============================================================
+    @Operation(
+        summary = "Obtener timeline de un evento",
+        description = "Devuelve la evolución o historial del evento en el sistema",
+        tags = { "Eventos" }
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Timeline obtenido correctamente."),
+        @ApiResponse(responseCode = "404", description = "Evento no encontrado.")
+    })
+    @GetMapping("/{eventId}/timeline")
+    public ResponseEntity<?> getEventTimeline(@PathVariable String eventId) {
+        // TODO: Implementar obtención del timeline
+        return ResponseEntity.badRequest().body(Map.of("status", "not_implemented"));
+    }
 }
