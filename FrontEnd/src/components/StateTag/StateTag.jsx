@@ -1,14 +1,16 @@
+import { toCapitalizeCase } from '../../functions';
 import styles from './StateTag.module.scss';
 
 function StateTag({ state = "In Queue" }) {
+
   const labels = {
     "In Queue": "queue",
-    Delivered: "delivered",
-    Failed: "failed",
+    RECEIVED: "delivered",
+    FAILED: "failed",
   };
   return (
     <div className={`${styles.tag} ${styles[labels[state]]}`}>
-      {state}
+      {toCapitalizeCase(state)}
     </div>
   );
 }

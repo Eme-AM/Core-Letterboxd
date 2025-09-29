@@ -102,7 +102,7 @@
   text-transform: capitalize;
 }
 
-.status-badge.delivered {
+.status-badge.received {
   background: #2ecc71;
   color: #fff;
 }
