@@ -118,7 +118,7 @@ function Dashboard() {
   const [eventsEvolutionData, setEventsEvolutionData] = useState([]);
   const [eventsPerModuleData, setEventsPerModuleData] = useState([]);
   const [stats, setStats] = useState([]);
- 
+
 
   const API = 'http://core-letterboxd.us-east-2.elasticbeanstalk.com';
   //const API = 'http://localhost:8080'
@@ -130,7 +130,7 @@ function Dashboard() {
       .then(res => {
         if (res.data) {
           const formattedData = [
-            { title: "Total Events", value: res.data.totalEvents, change: toPercent(res.data.totalEventsChange), src: totalEventsSvg },
+            { title: "Total Events", value: res.data.totalEvents, change: toPercent(res.data.totalChange), src: totalEventsSvg },
             { title: "Delivered", value: res.data.delivered, src: deliveredSvg, change: toPercent(res.data.deliveredChange) },
             { title: "Failed", value: res.data.failed, change: toPercent(res.data.failedChange), src: failedSvg },
             { title: "In Queue", value: res.data.inQueue, src: inQueueSvg },
@@ -233,7 +233,7 @@ function Dashboard() {
     setEventsPerModuleData(modMapped);
 */
     // 4) Recent Events
-    
+
     api
       //.get("events?page=0&size=5&module=movies&search=inception")
       .get(`events?size=5`)
@@ -270,12 +270,11 @@ function Dashboard() {
     });
     setRecentEvents(mappedRecent);*/
 
-  /*} catch (err) {
-    console.error('Error obteniendo datos', err);
-  }
-}) ();*/
-}, []);
-
+    /*} catch (err) {
+      console.error('Error obteniendo datos', err);
+    }
+  }) ();*/
+  }, []);
 
   return (
     <div className="dashboard-container">
