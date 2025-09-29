@@ -5,6 +5,7 @@ import com.example.CoreBack.entity.StoredEvent;
 import com.example.CoreBack.repository.EventRepository;
 import com.example.CoreBack.service.EventService;
 import jakarta.validation.Valid;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,10 +24,12 @@ public class EventController {
 
     private final EventRepository eventRepository;
     private final EventService eventService;
+    private final RabbitTemplate rabbitTemplate;
 
-    public EventController(EventRepository eventRepository, EventService eventService) {
+    public EventController(EventRepository eventRepository, EventService eventService, RabbitTemplate rabbitTemplate) {
         this.eventRepository = eventRepository;
         this.eventService = eventService;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     // ============================================================
@@ -78,7 +81,7 @@ public class EventController {
     // 3. Recibir un nuevo evento
     // ============================================================
     @Operation(summary = "Recibir un nuevo evento", description = "Procesa un evento entrante y lo almacena")
-    @Parameter(name = "routingKey", description = "Clave de enrutamiento", example = "core.routing")
+    @Parameter(name = "routingKey", description = "Clave de enrutamiento", example = "movie.created")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Evento recibido correctamente"),
         @ApiResponse(responseCode = "400", description = "Error en el procesamiento")
@@ -86,15 +89,29 @@ public class EventController {
     @PostMapping("/receive")
     public ResponseEntity<?> receiveEvent(
             @Valid @RequestBody EventDTO eventDTO,
-            @RequestParam(defaultValue = "core.routing") String routingKey
+            @RequestParam(defaultValue = "movie.created") String routingKey
     ) {
         try {
-            StoredEvent storedEvent = eventService.processIncomingEvent(eventDTO, routingKey);
+            System.out.println("📨 Recibiendo evento: " + eventDTO.getId());
+            System.out.println("🔑 Routing Key: " + routingKey);
+            
+            // Enviar a RabbitMQ
+            rabbitTemplate.convertAndSend(
+                "letterboxd_exchange",
+                routingKey,
+                eventDTO
+            );
+            
+            System.out.println("✅ Evento enviado a RabbitMQ exchange: letterboxd_exchange");
+            
             return ResponseEntity.ok(Map.of(
-                    "status", "received",
-                    "eventId", storedEvent.getEventId()
+                    "status", "sent_to_queue",
+                    "eventId", eventDTO.getId(),
+                    "routingKey", routingKey
             ));
         } catch (Exception e) {
+            System.err.println("❌ Error enviando a RabbitMQ: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of(
                     "status", "error",
                     "message", e.getMessage()
