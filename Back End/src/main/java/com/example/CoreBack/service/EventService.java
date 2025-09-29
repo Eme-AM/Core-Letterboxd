@@ -9,10 +9,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import java.util.function.Predicate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,30 +35,38 @@ public class EventService {
     }
 
     public StoredEvent processIncomingEvent(@Valid EventDTO eventDTO, String routingKey) {
-        try {
-            String eventId = eventDTO.getId();
-            String type = eventDTO.getType();
-            String source = eventDTO.getSource();
-            String contentType = eventDTO.getDatacontenttype();
-            String payloadJson = objectMapper.writeValueAsString(eventDTO.getData());
+    try {
+        String eventId = eventDTO.getId();
+        String type = eventDTO.getType();
+        String source = eventDTO.getSource();
+        String contentType = eventDTO.getDatacontenttype();
+        String payloadJson = objectMapper.writeValueAsString(eventDTO.getData());
 
-            LocalDateTime occurredAt = eventDTO.getSysDate() != null
-                    ? eventDTO.getSysDate()
-                    : LocalDateTime.now();
+        LocalDateTime occurredAt = eventDTO.getSysDate() != null
+                ? eventDTO.getSysDate()
+                : LocalDateTime.now();
 
-            StoredEvent storedEvent = new StoredEvent(
-                    eventId, type, source, contentType, payloadJson, occurredAt
-            );
-            storedEvent.setStatus("RECEIVED");
-            eventRepository.save(storedEvent);
+        StoredEvent storedEvent = new StoredEvent(
+                eventId, type, source, contentType, payloadJson, occurredAt
+        );
+        storedEvent.setStatus("RECEIVED");
+        eventRepository.save(storedEvent);
 
-            publisherService.publish(eventDTO, routingKey);
+        // --- DEBUG: print del evento recibido ---
+        System.out.println("Evento recibido:");
+        System.out.println("ID: " + storedEvent.getEventId());
+        System.out.println("Type: " + storedEvent.getEventType());
+        System.out.println("OccurredAt: " + storedEvent.getOccurredAt());
+        System.out.println("Payload: " + storedEvent.getPayload());
 
-            return storedEvent;
-        } catch (Exception e) {
-            throw new RuntimeException("Error procesando evento", e);
-        }
+        publisherService.publish(eventDTO, routingKey);
+
+        return storedEvent;
+    } catch (Exception e) {
+        throw new RuntimeException("Error procesando evento", e);
     }
+}
+
 
     // Paginación y filtros
     public Map<String, Object> getAllEvents(int page, int size, String module, String status, String search) {
@@ -77,55 +89,104 @@ public class EventService {
 
     // Estadísticas globales reales
     public Map<String, Object> getGlobalStats() {
-        long total = eventRepository.count();
-        long delivered = eventRepository.findAll().stream()
-                .filter(e -> "DELIVERED".equalsIgnoreCase(e.getStatus()))
-                .count();
-        long failed = eventRepository.findAll().stream()
-                .filter(e -> "FAILED".equalsIgnoreCase(e.getStatus()))
-                .count();
-        long inQueue = eventRepository.findAll().stream()
-                .filter(e -> "RECEIVED".equalsIgnoreCase(e.getStatus()))
-                .count();
+    YearMonth thisMonth = YearMonth.now();
+    YearMonth lastMonth = thisMonth.minusMonths(1);
 
-        YearMonth thisMonth = YearMonth.now();
-        YearMonth lastMonth = thisMonth.minusMonths(1);
+    LocalDate startOfThisMonth = thisMonth.atDay(1);
+    LocalDate startOfNextMonth = thisMonth.plusMonths(1).atDay(1);
+    LocalDate startOfLastMonth = lastMonth.atDay(1);
+    LocalDate startOfThisMonthForLast = thisMonth.atDay(1); // fin del mes pasado
 
-        return Map.of(
-                "totalEvents", total,
-                "delivered", delivered,
-                "failed", failed,
-                "inQueue", inQueue,
-                "thisMonth", thisMonth.toString(),
-                "lastMonth", lastMonth.toString()
-        );
-    }
+    List<StoredEvent> allEvents = eventRepository.findAll();
+
+    Predicate<StoredEvent> inThisMonth = e -> {
+        LocalDate date = e.getOccurredAt().toLocalDate();
+        return !date.isBefore(startOfThisMonth) && date.isBefore(startOfNextMonth);
+    };
+    Predicate<StoredEvent> inLastMonth = e -> {
+        LocalDate date = e.getOccurredAt().toLocalDate();
+        return !date.isBefore(startOfLastMonth) && date.isBefore(startOfThisMonthForLast);
+    };
+
+    long totalThisMonth = allEvents.stream().filter(inThisMonth).count();
+    long totalLastMonth = allEvents.stream().filter(inLastMonth).count();
+
+    long deliveredThisMonth = allEvents.stream().filter(e -> "DELIVERED".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
+    long deliveredLastMonth = allEvents.stream().filter(e -> "DELIVERED".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
+
+    long failedThisMonth = allEvents.stream().filter(e -> "FAILED".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
+    long failedLastMonth = allEvents.stream().filter(e -> "FAILED".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
+
+    long inQueueThisMonth = allEvents.stream().filter(e -> "RECEIVED".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
+    long inQueueLastMonth = allEvents.stream().filter(e -> "RECEIVED".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
+
+    BiFunction<Long, Long, Integer> calcChange = (current, previous) -> {
+    long difference = current - previous;            // diferencia absoluta
+    long base = Math.max(previous, 1);              // usamos 1 si el mes anterior fue 0 para evitar división por cero
+    int percentage = (int)((difference * 100) / base);  // cálculo del porcentaje
+    return percentage;
+};
+
+
+    return Map.ofEntries(
+        Map.entry("thisMonth", thisMonth.toString()),
+        Map.entry("lastMonth", lastMonth.toString()),
+        Map.entry("totalEvents", totalThisMonth),
+        Map.entry("totalEventsLastMonth", totalLastMonth),
+        Map.entry("totalChange", calcChange.apply(totalThisMonth, totalLastMonth)),
+        Map.entry("delivered", deliveredThisMonth),
+        Map.entry("deliveredChange", calcChange.apply(deliveredThisMonth, deliveredLastMonth)),
+        Map.entry("failed", failedThisMonth),
+        Map.entry("failedChange", calcChange.apply(failedThisMonth, failedLastMonth)),
+        Map.entry("inQueue", inQueueThisMonth),
+        Map.entry("inQueueChange", calcChange.apply(inQueueThisMonth, inQueueLastMonth))
+    );
+}
+
 
     // Evolución de eventos (últimas 24h)
     public List<Map<String, Object>> getEvolution() {
-        LocalDateTime now = LocalDateTime.now();
+    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime start = now.minusHours(23).truncatedTo(ChronoUnit.HOURS); // 23 horas atrás
 
-        List<StoredEvent> last24hEvents = eventRepository.findAll().stream()
-                .filter(e -> e.getOccurredAt().isAfter(now.minusHours(24)))
-                .toList();
+    // Traemos solo los eventos de las últimas 24h
+    List<StoredEvent> last24hEvents = eventRepository.findAll().stream()
+            .filter(e -> !e.getOccurredAt().isBefore(start)) // >= start
+            .toList();
 
-        Map<Integer, Long> counts = last24hEvents.stream()
-                .collect(Collectors.groupingBy(
-                        e -> e.getOccurredAt().getHour(),
-                        Collectors.counting()
-                ));
+    // --- DEBUG: print de todos los eventos capturados ---
+    System.out.println("Eventos en las últimas 24h:");
+    last24hEvents.forEach(e ->
+            System.out.println("ID: " + e.getEventId() + " | OccurredAt: " + e.getOccurredAt())
+    );
 
-        List<Map<String, Object>> evolution = new ArrayList<>();
-        for (int i = 23; i >= 0; i--) {
-            int hour = now.minusHours(i).getHour();
-            evolution.add(Map.of(
-                    "hour", hour,
-                    "count", counts.getOrDefault(hour, 0L)
+    // Agrupamos por fecha+hora truncada
+    Map<LocalDateTime, Long> counts = last24hEvents.stream()
+            .collect(Collectors.groupingBy(
+                    e -> e.getOccurredAt().truncatedTo(ChronoUnit.HOURS),
+                    Collectors.counting()
             ));
-        }
 
-        return evolution;
+    // Generamos la lista de evolución
+    List<Map<String, Object>> evolution = new ArrayList<>();
+    for (int i = 0; i < 24; i++) {
+        LocalDateTime hour = start.plusHours(i);
+        long count = counts.getOrDefault(hour, 0L);
+
+        // --- DEBUG: print de cada hora y su conteo ---
+        System.out.println("Hora: " + hour + " | Count: " + count);
+
+        evolution.add(Map.of(
+                "hour", hour.getHour(),
+                "count", count
+        ));
     }
+
+    return evolution;
+}
+
+
+
 
     // Agrupación por módulo
     public Map<String, Long> getEventsPerModule() {
