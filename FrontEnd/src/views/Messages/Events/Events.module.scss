@@ -30,13 +30,15 @@
     font-size: 16px;
     display: flex;
     flex-direction: row;
-    width: max(100%, 980px);
+    //width: max(100%, 980px);
+    width: max(100%, 840px);
     align-items: center;
     height: 34px;
     padding: 19px 0;
 
     .cell {
-        width: calc(100% / 7);
+        //width: calc(100% / 7);
+        width: calc(100% / 6);
         min-width: 140px;
         display: flex;
         align-items: center;

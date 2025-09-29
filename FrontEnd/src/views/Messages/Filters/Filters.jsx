@@ -15,7 +15,7 @@ function Filters({ searchFilter, setSearchFilter, statusFilter, setStatusFilter,
                 options={[
                     { label: 'Every State', value: '' },
                     { label: 'In Queue', value: 'In Queue' },
-                    { label: 'Delivered', value: 'Delivered' },
+                    { label: 'Received', value: 'Received' },
                     { label: 'Failed', value: 'Failed' }
                 ]}
             />
