@@ -9,10 +9,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import java.util.function.Predicate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @Service
@@ -77,29 +80,60 @@ public class EventService {
 
     // Estadísticas globales reales
     public Map<String, Object> getGlobalStats() {
-        long total = eventRepository.count();
-        long delivered = eventRepository.findAll().stream()
-                .filter(e -> "DELIVERED".equalsIgnoreCase(e.getStatus()))
-                .count();
-        long failed = eventRepository.findAll().stream()
-                .filter(e -> "FAILED".equalsIgnoreCase(e.getStatus()))
-                .count();
-        long inQueue = eventRepository.findAll().stream()
-                .filter(e -> "RECEIVED".equalsIgnoreCase(e.getStatus()))
-                .count();
+    YearMonth thisMonth = YearMonth.now();
+    YearMonth lastMonth = thisMonth.minusMonths(1);
 
-        YearMonth thisMonth = YearMonth.now();
-        YearMonth lastMonth = thisMonth.minusMonths(1);
+    LocalDate startOfThisMonth = thisMonth.atDay(1);
+    LocalDate startOfNextMonth = thisMonth.plusMonths(1).atDay(1);
+    LocalDate startOfLastMonth = lastMonth.atDay(1);
+    LocalDate startOfThisMonthForLast = thisMonth.atDay(1); // fin del mes pasado
 
-        return Map.of(
-                "totalEvents", total,
-                "delivered", delivered,
-                "failed", failed,
-                "inQueue", inQueue,
-                "thisMonth", thisMonth.toString(),
-                "lastMonth", lastMonth.toString()
-        );
-    }
+    List<StoredEvent> allEvents = eventRepository.findAll();
+
+    Predicate<StoredEvent> inThisMonth = e -> {
+        LocalDate date = e.getOccurredAt().toLocalDate();
+        return !date.isBefore(startOfThisMonth) && date.isBefore(startOfNextMonth);
+    };
+    Predicate<StoredEvent> inLastMonth = e -> {
+        LocalDate date = e.getOccurredAt().toLocalDate();
+        return !date.isBefore(startOfLastMonth) && date.isBefore(startOfThisMonthForLast);
+    };
+
+    long totalThisMonth = allEvents.stream().filter(inThisMonth).count();
+    long totalLastMonth = allEvents.stream().filter(inLastMonth).count();
+
+    long deliveredThisMonth = allEvents.stream().filter(e -> "DELIVERED".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
+    long deliveredLastMonth = allEvents.stream().filter(e -> "DELIVERED".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
+
+    long failedThisMonth = allEvents.stream().filter(e -> "FAILED".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
+    long failedLastMonth = allEvents.stream().filter(e -> "FAILED".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
+
+    long inQueueThisMonth = allEvents.stream().filter(e -> "RECEIVED".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
+    long inQueueLastMonth = allEvents.stream().filter(e -> "RECEIVED".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
+
+    BiFunction<Long, Long, Integer> calcChange = (current, previous) -> {
+    long difference = current - previous;            // diferencia absoluta
+    long base = Math.max(previous, 1);              // usamos 1 si el mes anterior fue 0 para evitar división por cero
+    int percentage = (int)((difference * 100) / base);  // cálculo del porcentaje
+    return percentage;
+};
+
+
+    return Map.ofEntries(
+        Map.entry("thisMonth", thisMonth.toString()),
+        Map.entry("lastMonth", lastMonth.toString()),
+        Map.entry("totalEvents", totalThisMonth),
+        Map.entry("totalEventsLastMonth", totalLastMonth),
+        Map.entry("totalChange", calcChange.apply(totalThisMonth, totalLastMonth)),
+        Map.entry("delivered", deliveredThisMonth),
+        Map.entry("deliveredChange", calcChange.apply(deliveredThisMonth, deliveredLastMonth)),
+        Map.entry("failed", failedThisMonth),
+        Map.entry("failedChange", calcChange.apply(failedThisMonth, failedLastMonth)),
+        Map.entry("inQueue", inQueueThisMonth),
+        Map.entry("inQueueChange", calcChange.apply(inQueueThisMonth, inQueueLastMonth))
+    );
+}
+
 
     // Evolución de eventos (últimas 24h)
     public List<Map<String, Object>> getEvolution() {
