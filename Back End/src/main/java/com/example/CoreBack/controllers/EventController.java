@@ -18,6 +18,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/events")
+@CrossOrigin(origins = "*")
 public class EventController {
 
     private final EventRepository eventRepository;
