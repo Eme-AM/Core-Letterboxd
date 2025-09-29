@@ -35,11 +35,11 @@ function EventDetails({ event, onClose }) {
   // Selección de ícono SVG y filtro de color según status
   let statusIcon, statusIconStyle;
   switch (event.status) {
-    case 'Delivered':
+    case 'RECEIVED':
       statusIcon = deliveredSvg;
       statusIconStyle = { filter: 'invert(56%) sepia(77%) saturate(453%) hue-rotate(90deg) brightness(92%) contrast(92%)' };
       break;
-    case 'Failed':
+    case 'FAILED':
       statusIcon = failedSvg;
       statusIconStyle = { filter: 'invert(34%) sepia(99%) saturate(7492%) hue-rotate(357deg) brightness(97%) contrast(101%)' };
       break;
@@ -63,7 +63,7 @@ function EventDetails({ event, onClose }) {
         </header>
 
         <p className="modal-subtitle">
-          Complete information about event “{event.id}”
+          Complete information about event “{"evt_" + event.id.toString().padStart(4, '0')}”
         </p>
 
         <div className="modal-status">
@@ -74,8 +74,8 @@ function EventDetails({ event, onClose }) {
               )}
             </span>
             <div>
-              <div className="status-id">{event.id}</div>
-              <div className="status-type">{event.action}</div>
+              <div className="status-id">{"evt_" + event.id.toString().padStart(4, '0')}</div>
+              <div className="status-type">{event.eventType}</div>
             </div>
           </div>
           <span
@@ -83,7 +83,7 @@ function EventDetails({ event, onClose }) {
             className={`status-badge ${event.status.toLowerCase().replace(" ", "-")}`}
 
           >
-            {event.status}
+            {toCapitalizeCase(event.status)}
           </span>
         </div>
 

@@ -18,7 +18,7 @@ function Events({ events, headers, setEvent }) {
 
       {events.map((event, index) => (
         <div key={index} className={styles.row}>
-          <div className={styles.cell}>{event.id}</div>
+          <div className={styles.cell}>{event.id.toString().padStart(4, '0')}</div>
           <div className={styles.cell}>
             <EventTypeTag>{event.eventType}</EventTypeTag>
           </div>

@@ -8,6 +8,7 @@ import EventDetails from '../../components/EventDetails';
 import styles from "./Messages.module.scss";
 import api from '../../axios';
 import arrow from '../../assets/arrow.png';
+import HeaderSection from '../../components/HeaderPage/HeaderPage';
 
 function Messages() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -94,6 +95,7 @@ function Messages() {
         //setLoading(false);
       });
   }, [moduleFilter, searchFilter, statusFilter]);
+  
   useEffect(() => {
     api
       //.get("events?page=0&size=5&module=movies&search=inception")
@@ -132,6 +134,7 @@ function Messages() {
     <div className="dashboard-container">
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <main className={`dashboard-main ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
+        <HeaderSection title={'Messages'} subtitle={'Monitoring & Management system’s events in real time'} />
         <ContainerSection title={'Filters & Search'} subtitle={"Filter and search for specific events"}>
           <Filters
             searchFilter={searchFilter}
@@ -150,11 +153,11 @@ function Messages() {
                 className={`${styles.arrowButton} ${styles.left}`}
                 onClick={() => setPage(page - 1)}
               >
-                <img src={arrow} alt="Anterior"  />
+                <img src={arrow} alt="Anterior" />
               </button>)}
 
             <div className={styles.pageNumbers}>
-              {Array.from({ length: totalPages}).map((_, i) => (
+              {Array.from({ length: totalPages }).map((_, i) => (
                 <button
                   key={i}
                   className={`${styles.pageButton} ${i === page ? styles.active : ''}`}

@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './Dashboard.css';
 import MetricCard from '../components/MetricCard';
 import Sidebar from '../components/Sidebar';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import appLogo from '../assets/App Logo.png';
 import totalEventsSvg from '../assets/totalEvents.svg';
 import deliveredSvg from '../assets/delivered.svg';
 import failedSvg from '../assets/failed.svg';
 import inQueueSvg from '../assets/inQueue.svg';
 import EventItem from "../components/EventItem";
 import EventDetailsModal from "../components/EventDetails";
+import HeaderSection from '../components/HeaderPage/HeaderPage';
+import api from '../axios';
 
 const ChartCard = ({ title, subtitle, children }) => (
   <div className="chart-card">
@@ -21,7 +22,7 @@ const ChartCard = ({ title, subtitle, children }) => (
   </div>
 );
 
-const eventsEvolutionData = [
+/*const eventsEvolutionData = [
   { time: '00hs', value: 400 },
   { time: '03hs', value: 50 },
   { time: '06hs', value: 20 },
@@ -31,16 +32,16 @@ const eventsEvolutionData = [
   { time: '18hs', value: 800 },
   { time: '21hs', value: 950 },
   { time: '24hs', value: 400 },
-];
+]
 
 const eventsPerModuleData = [
   { module: 'Users', value: 300 },
   { module: 'Movies', value: 500 },
   { module: 'Discovery', value: 200 },
   { module: 'Analytics', value: 700 },
-];
+];;*/
 
-const recentEvents = [
+/*const recentEvents = [
   {
     id: "evt_0005", action: "user.addFavourites", from: "Users Module", to: "Movies Module", status: "Delivered", timestamp: "2025-08-17 15:30:46",
     payload: { movie: 'movie 1' }, timeline: [
@@ -81,30 +82,100 @@ const recentEvents = [
       { name: "Delivered", timestamp: "2025-09-01 11:00" }
     ]
   },
-];
+];*/
 
 function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null); // evento seleccionado para modal
+  const [events, setEvents] = useState([]);
+  const [eventsEvolutionData, setEventsEvolutionData] = useState([]);
+  const [eventsPerModuleData, setEventsPerModuleData] = useState([]);
+  const [stats, setStats] = useState([]);
+
+  useEffect(() => {
+    api
+      //.get("events?page=0&size=5&module=movies&search=inception")
+      .get(`events?size=5`)
+      .then(res => {
+        if (res.data) {
+          setEvents(res.data.events);
+        }
+      })
+      .catch(err => {
+        //setError("No se pudieron cargar los eventos.");
+      })
+      .finally(() => {
+        //setLoading(false);
+      });
+    api
+      //.get("events?page=0&size=5&module=movies&search=inception")
+      .get(`events/evolution`)
+      .then(res => {
+        if (res.data) {
+          const formattedData = res.data.map(item => ({
+            time: item.hour.toString().padStart(2, '0') + "hs",
+            value: item.count
+          }));
+
+          setEventsEvolutionData(formattedData);
+        }
+      })
+      .catch(err => {
+        //setError("No se pudieron cargar los eventos.");
+      })
+      .finally(() => {
+        //setLoading(false);
+      });
+    api
+      //.get("events?page=0&size=5&module=movies&search=inception")
+      .get(`events/per-module`)
+      .then(res => {
+        if (res.data) {
+          const formattedData = Object.entries(res.data).map(([key, value]) => ({
+            module: key,
+            value: value
+          }));
+
+          setEventsPerModuleData(formattedData);
+        }
+      })
+      .catch(err => {
+        //setError("No se pudieron cargar los eventos.");
+      })
+      .finally(() => {
+        //setLoading(false);
+      });
+    api
+      .get(`events/stats`)
+      .then(res => {
+        if (res.data) {
+          const formattedData = [
+            { title: "Total Events", value: res.data.totalEvents, change: res.data.totalChange, src: totalEventsSvg },
+            { title: "Delivered", value: res.data.delivered, src: deliveredSvg, change: res.data.deliveredChange },
+            { title: "Failed", value: res.data.failed, change: res.data.failedChange, src: failedSvg },
+            { title: "In Queue", value: res.data.inQueue, src: inQueueSvg },
+          ];
+          setStats(formattedData)
+        }
+      })
+      .catch(err => {
+        //setError("No se pudieron cargar los eventos.");
+      })
+      .finally(() => {
+        //setLoading(false);
+      });
+  }, []);
 
   return (
     <div className="dashboard-container">
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <main className={`dashboard-main ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
-        <header className="dashboard-header">
-          <div className="dashboard-title-logo">
-            <h1>Dashboard</h1>
-            <img src={appLogo} alt="App Logo" className="logo-img" />
-          </div>
-          <p className="dashboard-desc">
-            Monitoring & Management system's events in real time
-          </p>
-        </header>
+        <HeaderSection title={'Dashboard'} subtitle={'Monitoring & Management system’s events in real time'} />
 
         <section className="dashboard-metrics">
-          <MetricCard
+         {/*<MetricCard
             title="Total Events"
-            value={847}
+            value={stats.totalEvents}
             change="+12%"
             icon={<img src={totalEventsSvg} alt="Total Events" style={{ width: 40, height: 40 }} />}
             changeType="positive"
@@ -127,7 +198,16 @@ function Dashboard() {
             title="In Queue"
             value={5}
             icon={<img src={inQueueSvg} alt="In Queue" style={{ width: 40, height: 40 }} />}
-          />
+          />*/}
+          {stats.map((stat) => (
+            <MetricCard
+              title={stat.title}
+              value={stat.value}
+              change={stat.change || stat.change == 0 && `${stat.change > 0 ? '+' : stat.change < 0 ? '-' : ''}${stat.change}%`}
+              changeType={stat.change <= 0 ? 'negative' : 'positive'}
+              icon={<img src={stat.src} alt={stat.title} style={{ width: 40, height: 40 }} />}
+            />
+          ))}
         </section>
 
         <section className="dashboard-charts">
@@ -165,7 +245,7 @@ function Dashboard() {
         <section className="dashboard-recent-events">
           <h2 className="recent-title">Recent Events</h2>
           <p className="recent-subtitle">Last processed events by the system</p>
-          {recentEvents.map((event, index) => (
+          {events.map((event, index) => (
             <EventItem
               key={index}
               {...event}
