@@ -53,7 +53,7 @@ public class EventConsumerService {
     public void receiveMovieEvents(Map<String, Object> message) {
         System.out.println("🎬 [MOVIES QUEUE] ===== MENSAJE RECIBIDO ===== ");
         System.out.println("🎬 [MOVIES QUEUE] Contenido: " + message);
-        saveEvent(message, "MOVIES");
+        
     }
 
     @RabbitListener(queues = CORE_USERS_QUEUE)
@@ -61,35 +61,35 @@ public class EventConsumerService {
     public void receiveUserEvents(Map<String, Object> message) {
         System.out.println("👤 [USERS QUEUE] ===== MENSAJE RECIBIDO =====");
         System.out.println("👤 [USERS QUEUE] Contenido: " + message);
-        saveEvent(message, "USERS");
+        
     }
 
     @RabbitListener(queues = CORE_RATINGS_QUEUE)
     @Transactional
     public void receiveRatingEvents(Map<String, Object> message) {
         System.out.println("⭐ [RATINGS QUEUE] ===== MENSAJE RECIBIDO =====");
-        saveEvent(message, "RATINGS");
+        
     }
 
     @RabbitListener(queues = CORE_SOCIAL_QUEUE)
     @Transactional
     public void receiveSocialEvents(Map<String, Object> message) {
         System.out.println("🤝 [SOCIAL QUEUE] ===== MENSAJE RECIBIDO =====");
-        saveEvent(message, "SOCIAL");
+        
     }
 
     @RabbitListener(queues = CORE_ANALYTICS_QUEUE)
     @Transactional
     public void receiveAnalyticsEvents(Map<String, Object> message) {
         System.out.println("📊 [ANALYTICS QUEUE] ===== MENSAJE RECIBIDO =====");
-        saveEvent(message, "ANALYTICS");
+        
     }
 
     @RabbitListener(queues = CORE_RECOMMENDATIONS_QUEUE)
     @Transactional
     public void receiveRecommendationsEvents(Map<String, Object> message) {
         System.out.println("💡 [RECOMMENDATIONS QUEUE] ===== MENSAJE RECIBIDO =====");
-        saveEvent(message, "RECOMMENDATIONS");
+        
     }
 
     private void saveEvent(Map<String, Object> message, String queueType) {
