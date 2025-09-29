@@ -35,37 +35,45 @@ public class EventService {
     }
 
     public StoredEvent processIncomingEvent(@Valid EventDTO eventDTO, String routingKey) {
-    try {
-        String eventId = eventDTO.getId();
-        String type = eventDTO.getType();
-        String source = eventDTO.getSource();
-        String contentType = eventDTO.getDatacontenttype();
-        String payloadJson = objectMapper.writeValueAsString(eventDTO.getData());
-
-        LocalDateTime occurredAt = eventDTO.getSysDate() != null
-                ? eventDTO.getSysDate()
-                : LocalDateTime.now();
-
-        StoredEvent storedEvent = new StoredEvent(
-                eventId, type, source, contentType, payloadJson, occurredAt
-        );
-        storedEvent.setStatus("RECEIVED");
-        eventRepository.save(storedEvent);
-
-        // --- DEBUG: print del evento recibido ---
-        System.out.println("Evento recibido:");
-        System.out.println("ID: " + storedEvent.getEventId());
-        System.out.println("Type: " + storedEvent.getEventType());
-        System.out.println("OccurredAt: " + storedEvent.getOccurredAt());
-        System.out.println("Payload: " + storedEvent.getPayload());
-
-        publisherService.publish(eventDTO, routingKey);
-
-        return storedEvent;
-    } catch (Exception e) {
-        throw new RuntimeException("Error procesando evento", e);
+        try {
+            String eventId = eventDTO.getId();
+            String type = eventDTO.getType();
+            String source = eventDTO.getSource();
+            String contentType = eventDTO.getDatacontenttype();
+    
+            String payloadJson = objectMapper.writeValueAsString(eventDTO.getData());
+    
+            
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime sysDate = eventDTO.getSysDate();
+    
+            LocalDateTime occurredAt;
+            if (sysDate != null &&
+                !sysDate.isAfter(now.plusMinutes(5)) &&   // no en el futuro más de 5 min
+                !sysDate.isBefore(now.minusDays(1))) {    // no más de 1 día viejo
+                occurredAt = sysDate;
+            } else {
+                occurredAt = now;
+            }
+    
+            StoredEvent storedEvent = new StoredEvent(
+                    eventId,
+                    type,
+                    source,
+                    contentType,
+                    payloadJson,
+                    occurredAt
+            );
+    
+            
+            publisherService.publish(eventDTO, routingKey);
+    
+            return storedEvent;
+        } catch (Exception e) {
+            throw new RuntimeException("Error procesando evento", e);
+        }
     }
-}
+    
 
 
     // Paginación y filtros
