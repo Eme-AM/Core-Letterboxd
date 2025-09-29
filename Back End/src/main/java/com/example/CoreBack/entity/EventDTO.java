@@ -20,8 +20,8 @@ public class EventDTO {
     @NotBlank(message = "El campo 'datacontenttype' es obligatorio")
     private String datacontenttype; // Ej: "application/json"
 
-    @NotNull(message = "El campo 'SysDate' es obligatorio")
-    private LocalDateTime sysDate; // Fecha y hora del evento
+    private LocalDateTime sysDate; // quitar @NotNull
+
 
     @NotNull(message = "El campo 'data' es obligatorio")
     private Map<String, Object> data; // Payload dinámico
