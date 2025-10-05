@@ -4,6 +4,7 @@ import com.example.CoreBack.entity.StoredEvent;
 import com.example.CoreBack.repository.EventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
+import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,86 +19,35 @@ public class EventConsumerService {
 
     private final EventRepository eventRepository;
     private final ObjectMapper objectMapper;
+    private final AmqpTemplate rabbitTemplate;
 
-    public EventConsumerService(EventRepository eventRepository, ObjectMapper objectMapper) {
+    public EventConsumerService(EventRepository eventRepository, ObjectMapper objectMapper, AmqpTemplate rabbitTemplate) {
         this.eventRepository = eventRepository;
         this.objectMapper = objectMapper;
-        System.out.println("🔧 EventConsumerService CONSTRUCTOR llamado");
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @PostConstruct
     public void init() {
         System.out.println("===========================================");
         System.out.println("🎧 EventConsumerService INICIADO");
-        System.out.println("📡 Listeners configurados para:");
-        System.out.println("   - " + CORE_ALL_QUEUE);
-        System.out.println("   - " + CORE_MOVIES_QUEUE);
-        System.out.println("   - " + CORE_USERS_QUEUE);
-        System.out.println("   - " + CORE_RATINGS_QUEUE);
-        System.out.println("   - " + CORE_SOCIAL_QUEUE);
-        System.out.println("   - " + CORE_ANALYTICS_QUEUE);
-        System.out.println("   - " + CORE_RECOMMENDATIONS_QUEUE);
+        System.out.println("📡 Escuchando solo la cola principal: " + CORE_ALL_QUEUE);
         System.out.println("===========================================");
     }
 
     @RabbitListener(queues = CORE_ALL_QUEUE)
     @Transactional
     public void receiveAllEvents(Map<String, Object> message) {
-        System.out.println("📥 [ALL QUEUE] ===== MENSAJE RECIBIDO ===== ");
-        System.out.println("📥 [ALL QUEUE] Contenido: " + message);
+        System.out.println("📥 [ALL QUEUE] ===== MENSAJE RECIBIDO =====");
+        System.out.println("📥 Contenido: " + message);
+
         saveEvent(message, "ALL");
-    }
-
-    @RabbitListener(queues = CORE_MOVIES_QUEUE)
-    @Transactional
-    public void receiveMovieEvents(Map<String, Object> message) {
-        System.out.println("🎬 [MOVIES QUEUE] ===== MENSAJE RECIBIDO ===== ");
-        System.out.println("🎬 [MOVIES QUEUE] Contenido: " + message);
-        
-    }
-
-    @RabbitListener(queues = CORE_USERS_QUEUE)
-    @Transactional
-    public void receiveUserEvents(Map<String, Object> message) {
-        System.out.println("👤 [USERS QUEUE] ===== MENSAJE RECIBIDO =====");
-        System.out.println("👤 [USERS QUEUE] Contenido: " + message);
-        
-    }
-
-    @RabbitListener(queues = CORE_RATINGS_QUEUE)
-    @Transactional
-    public void receiveRatingEvents(Map<String, Object> message) {
-        System.out.println("⭐ [RATINGS QUEUE] ===== MENSAJE RECIBIDO =====");
-        
-    }
-
-    @RabbitListener(queues = CORE_SOCIAL_QUEUE)
-    @Transactional
-    public void receiveSocialEvents(Map<String, Object> message) {
-        System.out.println("🤝 [SOCIAL QUEUE] ===== MENSAJE RECIBIDO =====");
-        
-    }
-
-    @RabbitListener(queues = CORE_ANALYTICS_QUEUE)
-    @Transactional
-    public void receiveAnalyticsEvents(Map<String, Object> message) {
-        System.out.println("📊 [ANALYTICS QUEUE] ===== MENSAJE RECIBIDO =====");
-        
-    }
-
-    @RabbitListener(queues = CORE_RECOMMENDATIONS_QUEUE)
-    @Transactional
-    public void receiveRecommendationsEvents(Map<String, Object> message) {
-        System.out.println("💡 [RECOMMENDATIONS QUEUE] ===== MENSAJE RECIBIDO =====");
-        
+        routeEventToModules(message);
     }
 
     private void saveEvent(Map<String, Object> message, String queueType) {
         try {
             String eventId = (String) message.getOrDefault("id", "unknown");
-            
-            System.out.println("💾 [" + queueType + "] Guardando evento ID: " + eventId);
-
             String payloadJson = objectMapper.writeValueAsString(message);
 
             StoredEvent storedEvent = new StoredEvent(
@@ -109,11 +59,72 @@ public class EventConsumerService {
                     LocalDateTime.now()
             );
 
-            StoredEvent saved = eventRepository.save(storedEvent);
-            System.out.println("✅ [" + queueType + "] Evento guardado con ID DB = " + saved.getId());
+            eventRepository.save(storedEvent);
+            System.out.println("✅ [" + queueType + "] Evento guardado correctamente en DB");
 
         } catch (Exception e) {
-            System.err.println("❌ [" + queueType + "] ERROR: " + e.getMessage());
+            System.err.println("❌ [" + queueType + "] ERROR guardando evento: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void routeEventToModules(Map<String, Object> message) {
+        String eventType = (String) message.getOrDefault("type", "");
+
+        try {
+            // =============================
+            // 🎬 EVENTOS DE PELÍCULAS
+            // =============================
+            if (eventType.startsWith("movie.")) {
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RATINGS, message);          // Reviews & Ratings
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_ANALYTICS, message);        // Analytics
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
+            }
+
+            // =============================
+            // 👤 EVENTOS DE USUARIOS
+            // =============================
+            else if (eventType.startsWith("user.")) {
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_SOCIAL, message);           // Social Graph
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RATINGS, message);          // Reviews & Ratings
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_ANALYTICS, message);        // Analytics
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
+            }
+
+            // =============================
+            // ⭐ EVENTOS DE RATINGS/REVIEWS
+            // =============================
+            else if (eventType.startsWith("rating.") || eventType.startsWith("review.")) {
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_ANALYTICS, message);        // Analytics
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
+            }
+
+            // =============================
+            // 🤝 EVENTOS DE SOCIAL GRAPH
+            // =============================
+            else if (eventType.startsWith("social.")) {
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_ANALYTICS, message);        // Analytics
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
+            }
+
+            // =============================
+            // 📊 EVENTOS DE ANALYTICS
+            // =============================
+            else if (eventType.startsWith("analytics.")) {
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_ANALYTICS, message);
+            }
+
+            // =============================
+            // 👁 EVENTOS DE RECOMMENDATIONS
+            // =============================
+            else if (eventType.startsWith("recommend.")) {
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RECOMMENDATIONS, message);
+            }
+
+            System.out.println("📤 Evento reenviado según tipo: " + eventType);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error reenviando evento a colas: " + e.getMessage());
             e.printStackTrace();
         }
     }
