@@ -79,16 +79,18 @@ public class EventConsumerService {
                 rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RATINGS, message);          // Reviews & Ratings
                 rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_ANALYTICS, message);        // Analytics
                 rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_SOCIAL, message);           //SocialGraph
             }
 
             // =============================
             // 👤 EVENTOS DE USUARIOS
             // =============================
             else if (eventType.startsWith("user.")) {
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_SOCIAL, message);           // Social Graph
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_MOVIES, message);           // MOVIE
                 rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RATINGS, message);          // Reviews & Ratings
                 rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_ANALYTICS, message);        // Analytics
                 rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_SOCIAL, message);           //SocialGraph
             }
 
             // =============================
@@ -97,6 +99,7 @@ public class EventConsumerService {
             else if (eventType.startsWith("rating.") || eventType.startsWith("review.")) {
                 rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_ANALYTICS, message);        // Analytics
                 rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_SOCIAL, message);           //SocialGraph
             }
 
             // =============================
@@ -105,21 +108,10 @@ public class EventConsumerService {
             else if (eventType.startsWith("social.")) {
                 rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_ANALYTICS, message);        // Analytics
                 rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
+                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RATINGS, message);          // Reviews & Ratings
             }
 
-            // =============================
-            // 📊 EVENTOS DE ANALYTICS
-            // =============================
-            else if (eventType.startsWith("analytics.")) {
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_ANALYTICS, message);
-            }
-
-            // =============================
-            // 👁 EVENTOS DE RECOMMENDATIONS
-            // =============================
-            else if (eventType.startsWith("recommend.")) {
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RECOMMENDATIONS, message);
-            }
+            
 
             System.out.println("📤 Evento reenviado según tipo: " + eventType);
 
