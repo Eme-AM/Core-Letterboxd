@@ -18,11 +18,11 @@ import java.util.UUID;
 public class EventService {
 
     private final EventRepository eventRepository;
-    private final EventPublisherTest publisherService;
+    private final EventPublisherService publisherService;
     private final ObjectMapper objectMapper;
 
     public EventService(EventRepository eventRepository,
-                        EventPublisherTest publisherService,
+                        EventPublisherService publisherService,
                         ObjectMapper objectMapper) {
         this.eventRepository = eventRepository;
         this.publisherService = publisherService;

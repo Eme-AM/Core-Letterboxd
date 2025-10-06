@@ -46,5 +46,63 @@ public class EventDTO {
 
     public Map<String, Object> getData() { return data; }
     public void setData(Map<String, Object> data) { this.data = data; }
+    
+    // Convenience methods for test compatibility
+    public void setEventType(String eventType) { this.type = eventType; }
+    public String getEventType() { return this.type; }
+    
+    public void setUserId(String userId) {
+        if (this.data == null) {
+            this.data = new java.util.HashMap<>();
+        }
+        this.data.put("userId", userId);
+    }
+    
+    public String getUserId() {
+        return this.data != null ? (String) this.data.get("userId") : null;
+    }
+    
+    public void setMovieId(String movieId) {
+        if (this.data == null) {
+            this.data = new java.util.HashMap<>();
+        }
+        this.data.put("movieId", movieId);
+    }
+    
+    public String getMovieId() {
+        return this.data != null ? (String) this.data.get("movieId") : null;
+    }
+    
+    public void setRating(double rating) {
+        if (this.data == null) {
+            this.data = new java.util.HashMap<>();
+        }
+        this.data.put("rating", rating);
+    }
+    
+    public Double getRating() {
+        return this.data != null ? (Double) this.data.get("rating") : null;
+    }
+    
+    public void setEventData(String eventData) {
+        if (this.data == null) {
+            this.data = new java.util.HashMap<>();
+        }
+        this.data.put("eventData", eventData);
+    }
+    
+    public String getEventData() {
+        return this.data != null ? (String) this.data.get("eventData") : null;
+    }
+    
+    public void setReview(String review) {
+        if (this.data == null) {
+            this.data = new java.util.HashMap<>();
+        }
+        this.data.put("review", review);
+    }
+    
+    public String getReview() {
+        return this.data != null ? (String) this.data.get("review") : null;
+    }
 }
-
