@@ -130,8 +130,8 @@ public class EventService {
     long failedThisMonth = allEvents.stream().filter(e -> "FAILED".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
     long failedLastMonth = allEvents.stream().filter(e -> "FAILED".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
 
-    long inQueueThisMonth = allEvents.stream().filter(e -> "RECEIVED".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
-    long inQueueLastMonth = allEvents.stream().filter(e -> "RECEIVED".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
+    long inQueueThisMonth = allEvents.stream().filter(e -> "IN_QUEUE".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
+    long inQueueLastMonth = allEvents.stream().filter(e -> "IN_QUEUE".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
 
     BiFunction<Long, Long, Integer> calcChange = (current, previous) -> {
     long difference = current - previous;            // diferencia absoluta

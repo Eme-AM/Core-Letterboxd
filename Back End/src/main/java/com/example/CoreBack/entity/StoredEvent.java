@@ -31,7 +31,7 @@ public class StoredEvent {
 
     // Nuevo campo: estado del evento
     @Column(nullable = false)
-    private String status = "RECEIVED"; // RECEIVED, DELIVERED, FAILED
+    private String status = "IN_QUEUE"; // IN_QUEUE, DELIVERED, FAILED
 
     public StoredEvent() {}
 
@@ -43,7 +43,7 @@ public class StoredEvent {
         this.contentType = contentType;
         this.payload = payload;
         this.occurredAt = occurredAt;
-        this.status = "RECEIVED";
+        this.status = "IN_QUEUE";
     }
 
     // Getters & setters
