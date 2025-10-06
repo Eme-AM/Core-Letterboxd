@@ -24,7 +24,7 @@ public class RabbitConfig {
 
     // Routing keys personalizadas (ya no usamos los wildcard tipo *.created)
     // porque el Core decide a qué cola reenviar cada evento
-    public static final String ROUTING_KEY_ALL = "core.all";
+    public static final String ROUTING_KEY_ALL = "#";
     public static final String ROUTING_KEY_USERS = "core.users";
     public static final String ROUTING_KEY_MOVIES = "core.movies";
     public static final String ROUTING_KEY_RATINGS = "core.ratings";
@@ -49,9 +49,10 @@ public class RabbitConfig {
 
     // Bindings (uno a uno, sin wildcard)
     @Bean
-    public Binding bindingAll(Queue coreAllQueue, TopicExchange exchange) {
-        return BindingBuilder.bind(coreAllQueue).to(exchange).with(ROUTING_KEY_ALL);
-    }
+public Binding bindingAll(Queue coreAllQueue, TopicExchange exchange) {
+    return BindingBuilder.bind(coreAllQueue).to(exchange).with(ROUTING_KEY_ALL);
+}
+
 
     @Bean
     public Binding bindingUsers(Queue coreUsersQueue, TopicExchange exchange) {

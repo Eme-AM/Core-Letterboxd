@@ -35,17 +35,37 @@ public class EventConsumerService {
         System.out.println("===========================================");
     }
 
+    /**
+     * Escucha SOLO la cola principal "core.all.queue"
+     */
     @RabbitListener(queues = CORE_ALL_QUEUE)
     @Transactional
     public void receiveAllEvents(Map<String, Object> message) {
-        System.out.println("📥 [ALL QUEUE] ===== MENSAJE RECIBIDO =====");
-        System.out.println("📥 Contenido: " + message);
+        try {
+            System.out.println("\n📥 [ALL QUEUE] Evento recibido: " + message);
 
-        saveEvent(message, "ALL");
-        routeEventToModules(message);
+            // 🛡️ Evita procesar mensajes reenviados por el propio Core
+            if (message.containsKey("_origin") && "core".equals(message.get("_origin"))) {
+                System.out.println("🔁 Evento ignorado (reenviado por Core): " + message.get("id"));
+                return;
+            }
+
+            // 💾 Guarda en DB
+            saveEvent(message);
+
+            // 🚀 Redirige el evento a los módulos correspondientes
+            routeEventToModules(message);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error procesando evento: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
-    private void saveEvent(Map<String, Object> message, String queueType) {
+    /**
+     * Guarda el evento en la base de datos.
+     */
+    private void saveEvent(Map<String, Object> message) {
         try {
             String eventId = (String) message.getOrDefault("id", "unknown");
             String payloadJson = objectMapper.writeValueAsString(message);
@@ -60,58 +80,59 @@ public class EventConsumerService {
             );
 
             eventRepository.save(storedEvent);
-            System.out.println("✅ [" + queueType + "] Evento guardado correctamente en DB");
-
+            System.out.println("✅ Evento guardado correctamente (ID=" + eventId + ")");
         } catch (Exception e) {
-            System.err.println("❌ [" + queueType + "] ERROR guardando evento: " + e.getMessage());
+            System.err.println("❌ Error guardando evento: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
+    /**
+     * Redirige el evento a los módulos que lo necesitan según el tipo.
+     */
     private void routeEventToModules(Map<String, Object> message) {
         String eventType = (String) message.getOrDefault("type", "");
+        message.put("_origin", "core"); // 🏷️ Marca que fue reenviado por el Core
 
         try {
             // =============================
             // 🎬 EVENTOS DE PELÍCULAS
             // =============================
             if (eventType.startsWith("movie.")) {
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RATINGS, message);          // Reviews & Ratings
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_ANALYTICS, message);        // Analytics
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_SOCIAL, message);           //SocialGraph
+                sendTo(ROUTING_KEY_RATINGS, message);          // Reviews & Ratings
+                sendTo(ROUTING_KEY_ANALYTICS, message);        // Analytics
+                sendTo(ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
+                sendTo(ROUTING_KEY_SOCIAL, message);           // Social Graph
             }
 
             // =============================
             // 👤 EVENTOS DE USUARIOS
             // =============================
             else if (eventType.startsWith("user.")) {
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_MOVIES, message);           // MOVIE
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RATINGS, message);          // Reviews & Ratings
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_ANALYTICS, message);        // Analytics
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_SOCIAL, message);           //SocialGraph
+                sendTo(ROUTING_KEY_MOVIES, message);           // Movies
+                sendTo(ROUTING_KEY_RATINGS, message);          // Reviews & Ratings
+                sendTo(ROUTING_KEY_ANALYTICS, message);        // Analytics
+                sendTo(ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
+                sendTo(ROUTING_KEY_SOCIAL, message);           // Social Graph
             }
 
             // =============================
             // ⭐ EVENTOS DE RATINGS/REVIEWS
             // =============================
             else if (eventType.startsWith("rating.") || eventType.startsWith("review.")) {
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_ANALYTICS, message);        // Analytics
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_SOCIAL, message);           //SocialGraph
+                sendTo(ROUTING_KEY_ANALYTICS, message);        // Analytics
+                sendTo(ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
+                sendTo(ROUTING_KEY_SOCIAL, message);           // Social Graph
             }
 
             // =============================
             // 🤝 EVENTOS DE SOCIAL GRAPH
             // =============================
             else if (eventType.startsWith("social.")) {
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_ANALYTICS, message);        // Analytics
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
-                rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY_RATINGS, message);          // Reviews & Ratings
+                sendTo(ROUTING_KEY_ANALYTICS, message);        // Analytics
+                sendTo(ROUTING_KEY_RECOMMENDATIONS, message);  // Discovery & Recommendations
+                sendTo(ROUTING_KEY_RATINGS, message);          // Reviews & Ratings
             }
-
-            
 
             System.out.println("📤 Evento reenviado según tipo: " + eventType);
 
@@ -119,5 +140,13 @@ public class EventConsumerService {
             System.err.println("❌ Error reenviando evento a colas: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Envía un mensaje a una cola específica a través del Exchange.
+     */
+    private void sendTo(String routingKey, Map<String, Object> message) {
+        rabbitTemplate.convertAndSend(EXCHANGE, routingKey, message);
+        System.out.println("➡️ Enviado a cola: " + routingKey);
     }
 }
