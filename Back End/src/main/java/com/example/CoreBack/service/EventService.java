@@ -6,10 +6,12 @@ import com.example.CoreBack.repository.EventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import java.util.function.Predicate;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -78,22 +80,25 @@ public class EventService {
 
     // Paginación y filtros
     public Map<String, Object> getAllEvents(int page, int size, String module, String status, String search) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<StoredEvent> events = eventRepository.findAll(pageable);
+    // Ordena descendente por fecha (últimos eventos primero)
+    Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "occurredAt"));
+    Page<StoredEvent> events = eventRepository.findAll(pageable);
 
-        List<StoredEvent> filtered = events.getContent().stream()
-                .filter(e -> module == null || e.getSource().toLowerCase().contains(module.toLowerCase()))
-                .filter(e -> search == null || e.getPayload().toLowerCase().contains(search.toLowerCase()))
-                .filter(e -> status == null || e.getStatus().equalsIgnoreCase(status))
-                .collect(Collectors.toList());
+    // Filtros aplicados en memoria (pueden optimizarse luego con queries dinámicas)
+    List<StoredEvent> filtered = events.getContent().stream()
+            .filter(e -> module == null || e.getSource().toLowerCase().contains(module.toLowerCase()))
+            .filter(e -> search == null || e.getPayload().toLowerCase().contains(search.toLowerCase()))
+            // ⚠️ status sigue siendo simulado, ya que no está en la entidad
+            .filter(e -> status == null || status.equalsIgnoreCase("delivered"))
+            .collect(Collectors.toList());
 
-        return Map.of(
-                "page", page,
-                "size", size,
-                "total", events.getTotalElements(),
-                "events", filtered
-        );
-    }
+    return Map.of(
+            "page", page,
+            "size", size,
+            "total", events.getTotalElements(),
+            "events", filtered
+    );
+}
 
     // Estadísticas globales reales
     public Map<String, Object> getGlobalStats() {
