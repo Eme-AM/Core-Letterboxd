@@ -1,0 +1,264 @@
+@import url('https://fonts.googleapis.com/css?family=Montserrat:400,500,700&display=swap');
+
+// Variables
+$font-main: 'Segoe UI', Arial, sans-serif;
+$font-montserrat: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+$color-bg-gradient-start: #090e17;
+$color-bg-gradient-end: #121c2e;
+$color-card-bg: #19293F;
+$color-title: #fff;
+$color-desc: #888;
+$color-subtitle: #b0b8c1;
+$color-badge: #FF0035;
+
+// Mixins
+@mixin card {
+  background: $color-card-bg;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+@mixin title($size: 2.5em, $weight: 700) {
+  font-size: $size;
+  font-weight: $weight;
+  color: $color-title;
+  margin: 0;
+}
+
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(to bottom, $color-bg-gradient-start 0%, $color-bg-gradient-end 100%);
+  font-family: $font-main;
+  overflow: hidden;
+}
+
+.dashboard-main {
+  width: calc(100% - 94px);
+  padding: 40px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  margin-left: 94px;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+  box-sizing: border-box;
+
+  &.sidebar-open {
+    margin-left: 312px;
+    width: calc(100% - 312px);
+  }
+}
+
+.dashboard-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  .dashboard-title-logo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  h1 {
+    @include title;
+  }
+}
+
+.dashboard-logo {
+  display: none;
+  .logo-img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: transparent;
+  }
+}
+
+.dashboard-desc {
+  color: $color-desc;
+  font-size: 1.25em;
+  margin-left: 0;
+  margin-top: 0px;
+}
+
+.dashboard-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+  margin-bottom: 16px;
+
+  .metric-card {
+    @include card;
+    font-family: $font-montserrat;
+
+    &-queue {
+      height: 90px;
+      padding-top: 24px;
+      padding-bottom: 24px;
+      margin-top: 24px;
+      font-family: $font-montserrat;
+    }
+
+    .metric-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.3em;
+      font-weight: 500;
+      color: $color-title;
+
+      &-left {
+        flex-direction: row;
+        justify-content: flex-start;
+      }
+    }
+
+    .metric-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3em;
+
+      svg {
+        width: 32px;
+        height: 32px;
+        display: block;
+      }
+    }
+
+    .metric-value {
+      font-size: 32px;
+      font-weight: 700;
+      font-family: 'Montserrat';
+      color: $color-title;
+      text-align: center;
+    }
+
+    .metric-change {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .change-badge {
+        padding: 2px 10px;
+        border-radius: 8px;
+        font-size: 0.95em;
+        font-weight: 600;
+        background: $color-badge !important;
+        color: $color-title !important;
+
+        &.positive,
+        &.negative,
+        &.neutral {
+          background: $color-badge !important;
+          color: $color-title !important;
+        }
+      }
+
+      .change-desc {
+        color: $color-desc;
+        font-size: 0.95em;
+      }
+    }
+  }
+}
+
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 32px;
+
+  .chart-card {
+    @include card;
+
+    .chart-header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 24px;
+      font-weight: 600;
+      font-family: "Montserrat", sans-serif;
+      font-style: SemiBold;
+      line-height: 100%;
+      color: $color-title;
+    }
+
+    .chart-subtitle {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 400;
+      font-style: normal;
+      font-size: 14px;
+      line-height: 100%;
+      color: $color-subtitle;
+    }
+
+    .chart-content {
+      margin-top: 12px;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+}
+
+.dashboard-recent-events {
+  @include card;
+  color: $color-title;
+
+  .recent-title {
+    font-family: "Montserrat", sans-serif;
+    font-weight: 600;
+    font-style: SemiBold;
+    font-size: 28px;
+    line-height: 100%;
+    margin: 0;
+    color: $color-title;
+  }
+
+  .recent-subtitle {
+    font-family: "Montserrat", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    font-size: 18px;
+    line-height: 100%;
+    color: $color-subtitle;
+    margin: 0 0 12px 0;
+  }
+}
+
+// Responsividad
+@media (max-width: 900px) {
+  .dashboard-main {
+    padding: 24px 8px;
+  }
+  .dashboard-charts {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-container {
+    flex-direction: column;
+  }
+  .dashboard-main {
+    padding: 12px 4px;
+    margin-left: 0;
+  }
+  .dashboard-metrics {
+    grid-template-columns: 1fr;
+  }
+}
