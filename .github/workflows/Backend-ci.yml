@@ -33,5 +33,6 @@ jobs:
         environment_name: Core-letterboxd-env
         region: us-east-2
         version_label: v-${{ github.sha }}
-        description: "${{ github.event.head_commit.message }}"
-        deployment_package: "Back End/target/application.jar"
+        version_description: "${{ github.event.head_commit.message }}"
+        deployment_package: "Back End/target/core-letterboxd-0.0.1-SNAPSHOT.jar"
+
