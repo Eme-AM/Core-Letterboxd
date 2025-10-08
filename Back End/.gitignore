@@ -33,5 +33,5 @@ build/
 .vscode/
 
 ### Application Properties ###
-### prueba 6###
+### prueba 7###
 src/main/resources/application-local.properties
