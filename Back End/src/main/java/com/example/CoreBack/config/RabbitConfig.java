@@ -1,9 +1,6 @@
 package com.example.CoreBack.config;
 
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -13,9 +10,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitConfig {
 
+    // Exchange principal
     public static final String EXCHANGE = "letterboxd_exchange";
 
-    // Queues
+    // Colas
     public static final String CORE_ALL_QUEUE = "core.all.queue";
     public static final String CORE_USERS_QUEUE = "core.users.queue";
     public static final String CORE_MOVIES_QUEUE = "core.movies.queue";
@@ -24,93 +22,117 @@ public class RabbitConfig {
     public static final String CORE_ANALYTICS_QUEUE = "core.analytics.queue";
     public static final String CORE_RECOMMENDATIONS_QUEUE = "core.recommendations.queue";
 
-    // Routing keys
-    public static final String ROUTING_KEY_ALL = "#";
-    public static final String ROUTING_KEY_USERS = "user.*";
-    public static final String ROUTING_KEY_MOVIES = "movie.*";
-    public static final String ROUTING_KEY_RATINGS = "rating.*";
-    public static final String ROUTING_KEY_SOCIAL = "social.*";
-    public static final String ROUTING_KEY_ANALYTICS = "analytics.*";
-    public static final String ROUTING_KEY_RECOMMENDATIONS = "recommend.*";
+    // Routing keys base
+    public static final String RK_MOVIE = "movie.*";
+    public static final String RK_USER = "user.*";
+    public static final String RK_RATING = "rating.*";
+    public static final String RK_REVIEW = "review.*";
+    public static final String RK_SOCIAL = "social.*";
+    public static final String RK_ALL = "#"; // recibe todo
 
     @Bean
     public TopicExchange exchange() {
         return new TopicExchange(EXCHANGE, true, false);
     }
 
-    // Declaración de colas
-    @Bean
-    public Queue coreAllQueue() {
-        return new Queue(CORE_ALL_QUEUE, true);
-    }
+    // === Declaración de colas ===
+    @Bean public Queue coreAllQueue() { return new Queue(CORE_ALL_QUEUE, true); }
+    @Bean public Queue coreUsersQueue() { return new Queue(CORE_USERS_QUEUE, true); }
+    @Bean public Queue coreMoviesQueue() { return new Queue(CORE_MOVIES_QUEUE, true); }
+    @Bean public Queue coreRatingsQueue() { return new Queue(CORE_RATINGS_QUEUE, true); }
+    @Bean public Queue coreSocialQueue() { return new Queue(CORE_SOCIAL_QUEUE, true); }
+    @Bean public Queue coreAnalyticsQueue() { return new Queue(CORE_ANALYTICS_QUEUE, true); }
+    @Bean public Queue coreRecommendationsQueue() { return new Queue(CORE_RECOMMENDATIONS_QUEUE, true); }
 
-    @Bean
-    public Queue coreUsersQueue() {
-        return new Queue(CORE_USERS_QUEUE, true);
-    }
+    // === Bindings automáticos según las relaciones que pasaste ===
 
-    @Bean
-    public Queue coreMoviesQueue() {
-        return new Queue(CORE_MOVIES_QUEUE, true);
-    }
-
-    @Bean
-    public Queue coreRatingsQueue() {
-        return new Queue(CORE_RATINGS_QUEUE, true);
-    }
-
-    @Bean
-    public Queue coreSocialQueue() {
-        return new Queue(CORE_SOCIAL_QUEUE, true);
-    }
-
-    @Bean
-    public Queue coreAnalyticsQueue() {
-        return new Queue(CORE_ANALYTICS_QUEUE, true);
-    }
-
-    @Bean
-    public Queue coreRecommendationsQueue() {
-        return new Queue(CORE_RECOMMENDATIONS_QUEUE, true);
-    }
-
-    // Bindings
+    // 📦 Todos los eventos van también a "core.all.queue"
     @Bean
     public Binding bindingAll(Queue coreAllQueue, TopicExchange exchange) {
-        return BindingBuilder.bind(coreAllQueue).to(exchange).with(ROUTING_KEY_ALL);
+        return BindingBuilder.bind(coreAllQueue).to(exchange).with(RK_ALL);
     }
 
+    // 🎬 Películas → Ratings, Analytics, Recommendations, Social
     @Bean
-    public Binding bindingUsers(Queue coreUsersQueue, TopicExchange exchange) {
-        return BindingBuilder.bind(coreUsersQueue).to(exchange).with(ROUTING_KEY_USERS);
+    public Binding movieToRatings(Queue coreRatingsQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreRatingsQueue).to(exchange).with(RK_MOVIE);
     }
-
     @Bean
-    public Binding bindingMovies(Queue coreMoviesQueue, TopicExchange exchange) {
-        return BindingBuilder.bind(coreMoviesQueue).to(exchange).with(ROUTING_KEY_MOVIES);
+    public Binding movieToAnalytics(Queue coreAnalyticsQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreAnalyticsQueue).to(exchange).with(RK_MOVIE);
     }
-
     @Bean
-    public Binding bindingRatings(Queue coreRatingsQueue, TopicExchange exchange) {
-        return BindingBuilder.bind(coreRatingsQueue).to(exchange).with(ROUTING_KEY_RATINGS);
+    public Binding movieToRecommendations(Queue coreRecommendationsQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreRecommendationsQueue).to(exchange).with(RK_MOVIE);
     }
-
     @Bean
-    public Binding bindingSocial(Queue coreSocialQueue, TopicExchange exchange) {
-        return BindingBuilder.bind(coreSocialQueue).to(exchange).with(ROUTING_KEY_SOCIAL);
+    public Binding movieToSocial(Queue coreSocialQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreSocialQueue).to(exchange).with(RK_MOVIE);
     }
 
+    // 👤 Usuarios → Movies, Ratings, Analytics, Recommendations, Social
     @Bean
-    public Binding bindingAnalytics(Queue coreAnalyticsQueue, TopicExchange exchange) {
-        return BindingBuilder.bind(coreAnalyticsQueue).to(exchange).with(ROUTING_KEY_ANALYTICS);
+    public Binding userToMovies(Queue coreMoviesQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreMoviesQueue).to(exchange).with(RK_USER);
     }
-
     @Bean
-    public Binding bindingRecommendations(Queue coreRecommendationsQueue, TopicExchange exchange) {
-        return BindingBuilder.bind(coreRecommendationsQueue).to(exchange).with(ROUTING_KEY_RECOMMENDATIONS);
+    public Binding userToRatings(Queue coreRatingsQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreRatingsQueue).to(exchange).with(RK_USER);
+    }
+    @Bean
+    public Binding userToAnalytics(Queue coreAnalyticsQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreAnalyticsQueue).to(exchange).with(RK_USER);
+    }
+    @Bean
+    public Binding userToRecommendations(Queue coreRecommendationsQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreRecommendationsQueue).to(exchange).with(RK_USER);
+    }
+    @Bean
+    public Binding userToSocial(Queue coreSocialQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreSocialQueue).to(exchange).with(RK_USER);
     }
 
-    // Conversor JSON
+    // ⭐ Ratings/Reviews → Analytics, Recommendations, Social
+    @Bean
+    public Binding ratingToAnalytics(Queue coreAnalyticsQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreAnalyticsQueue).to(exchange).with(RK_RATING);
+    }
+    @Bean
+    public Binding reviewToAnalytics(Queue coreAnalyticsQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreAnalyticsQueue).to(exchange).with(RK_REVIEW);
+    }
+    @Bean
+    public Binding ratingToRecommendations(Queue coreRecommendationsQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreRecommendationsQueue).to(exchange).with(RK_RATING);
+    }
+    @Bean
+    public Binding reviewToRecommendations(Queue coreRecommendationsQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreRecommendationsQueue).to(exchange).with(RK_REVIEW);
+    }
+    @Bean
+    public Binding ratingToSocial(Queue coreSocialQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreSocialQueue).to(exchange).with(RK_RATING);
+    }
+    @Bean
+    public Binding reviewToSocial(Queue coreSocialQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreSocialQueue).to(exchange).with(RK_REVIEW);
+    }
+
+    // 🤝 Social → Analytics, Recommendations, Ratings
+    @Bean
+    public Binding socialToAnalytics(Queue coreAnalyticsQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreAnalyticsQueue).to(exchange).with(RK_SOCIAL);
+    }
+    @Bean
+    public Binding socialToRecommendations(Queue coreRecommendationsQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreRecommendationsQueue).to(exchange).with(RK_SOCIAL);
+    }
+    @Bean
+    public Binding socialToRatings(Queue coreRatingsQueue, TopicExchange exchange) {
+        return BindingBuilder.bind(coreRatingsQueue).to(exchange).with(RK_SOCIAL);
+    }
+
+    // === Conversor JSON y template ===
     @Bean
     public Jackson2JsonMessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();
