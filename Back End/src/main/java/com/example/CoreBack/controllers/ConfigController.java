@@ -5,13 +5,15 @@ import com.example.CoreBack.service.ConfigService;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/config")
 @Tag(name = "Configuración", description = "Gestión de policies y colas/tópicos")
+@CrossOrigin(origins = "*")
 public class ConfigController {
 
     private final ConfigService configService;
@@ -25,38 +27,36 @@ public class ConfigController {
     // ================================
     @Operation(summary = "Crear retry policy")
     @PostMapping("/policies/retry")
-    public ResponseEntity<?> createRetryPolicy(@RequestBody RetryPolicyDTO dto) {
-        // TODO: implementar creación de retry policy
-        return ResponseEntity.status(501).body("Not Implemented");
+    public ResponseEntity<RetryPolicyDTO> createRetryPolicy(@RequestBody RetryPolicyDTO dto) {
+        return ResponseEntity.ok(configService.createRetryPolicy(dto));
     }
 
     @Operation(summary = "Listar retry policies")
     @GetMapping("/policies/retry")
-    public ResponseEntity<?> listRetryPolicies() {
-        // TODO: implementar listado de retry policies
-        return ResponseEntity.status(501).body("Not Implemented");
+    public ResponseEntity<List<RetryPolicyDTO>> listRetryPolicies() {
+        return ResponseEntity.ok(configService.listRetryPolicies());
     }
 
-    @Operation(summary = "Obtener retry policy")
+    @Operation(summary = "Obtener retry policy por ID")
     @GetMapping("/policies/retry/{policyId}")
-    public ResponseEntity<?> getRetryPolicy(@PathVariable String policyId) {
-        // TODO: implementar obtención de retry policy
-        return ResponseEntity.status(501).body("Not Implemented");
+    public ResponseEntity<?> getRetryPolicy(@PathVariable Long policyId) {
+        RetryPolicyDTO dto = configService.getRetryPolicy(policyId);
+        if (dto == null)
+            return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(dto);
     }
 
     @Operation(summary = "Actualizar retry policy")
     @PutMapping("/policies/retry/{policyId}")
-    public ResponseEntity<?> updateRetryPolicy(@PathVariable String policyId,
-                                               @RequestBody RetryPolicyDTO dto) {
-        // TODO: implementar actualización de retry policy
-        return ResponseEntity.status(501).body("Not Implemented");
+    public ResponseEntity<RetryPolicyDTO> updateRetryPolicy(
+            @PathVariable Long policyId, @RequestBody RetryPolicyDTO dto) {
+        return ResponseEntity.ok(configService.updateRetryPolicy(policyId, dto));
     }
 
     @Operation(summary = "Eliminar retry policy")
     @DeleteMapping("/policies/retry/{policyId}")
-    public ResponseEntity<?> deleteRetryPolicy(@PathVariable String policyId) {
-        // TODO: implementar eliminación de retry policy
-        return ResponseEntity.status(501).body("Not Implemented");
+    public ResponseEntity<Void> deleteRetryPolicy(@PathVariable Long policyId) {
+        configService.deleteRetryPolicy(policyId);
+        return ResponseEntity.noContent().build();
     }
-
 }

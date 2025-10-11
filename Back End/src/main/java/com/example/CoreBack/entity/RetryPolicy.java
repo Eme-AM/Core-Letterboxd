@@ -1,10 +1,16 @@
 package com.example.CoreBack.entity;
 
+import jakarta.persistence.*;
 import lombok.Data;
 
+@Entity
 @Data
-public class RetryPolicyDTO {
+public class RetryPolicy {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String name;
     private int minDelay;
     private int maxDelay;
