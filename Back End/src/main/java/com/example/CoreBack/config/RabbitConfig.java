@@ -23,10 +23,10 @@ public class RabbitConfig {
     public static final String CORE_RECOMMENDATIONS_QUEUE = "core.recommendations.queue";
 
     // Routing keys base
-    public static final String RK_MOVIE = "movie.*";
-    public static final String RK_USER = "user.*";
-    public static final String RK_RATING = "rating.*";
-    public static final String RK_REVIEW = "review.*";
+    public static final String RK_MOVIE = "peliculas.*";
+    public static final String RK_USER = "usuarios.*";
+    public static final String RK_RATING = "reseñas.*";
+    public static final String RK_DISCOVERY = "discovery.*";
     public static final String RK_SOCIAL = "social.*";
     public static final String RK_ALL = "#"; // recibe todo
 
@@ -99,7 +99,7 @@ public class RabbitConfig {
     }
     @Bean
     public Binding reviewToAnalytics(Queue coreAnalyticsQueue, TopicExchange exchange) {
-        return BindingBuilder.bind(coreAnalyticsQueue).to(exchange).with(RK_REVIEW);
+        return BindingBuilder.bind(coreAnalyticsQueue).to(exchange).with(RK_RATING);
     }
     @Bean
     public Binding ratingToRecommendations(Queue coreRecommendationsQueue, TopicExchange exchange) {
@@ -107,7 +107,7 @@ public class RabbitConfig {
     }
     @Bean
     public Binding reviewToRecommendations(Queue coreRecommendationsQueue, TopicExchange exchange) {
-        return BindingBuilder.bind(coreRecommendationsQueue).to(exchange).with(RK_REVIEW);
+        return BindingBuilder.bind(coreRecommendationsQueue).to(exchange).with(RK_RATING);
     }
     @Bean
     public Binding ratingToSocial(Queue coreSocialQueue, TopicExchange exchange) {
@@ -115,7 +115,7 @@ public class RabbitConfig {
     }
     @Bean
     public Binding reviewToSocial(Queue coreSocialQueue, TopicExchange exchange) {
-        return BindingBuilder.bind(coreSocialQueue).to(exchange).with(RK_REVIEW);
+        return BindingBuilder.bind(coreSocialQueue).to(exchange).with(RK_RATING);
     }
 
     // 🤝 Social → Analytics, Recommendations, Ratings
