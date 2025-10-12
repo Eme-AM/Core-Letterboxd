@@ -5,18 +5,18 @@ import failedSvg from '../assets/failed.svg';
 import inQueueSvg from '../assets/inQueue.svg';
 import eyeEventItem from '../assets/eyeEventItem.svg';
 import "./EventItem.css";
-import { toCapitalizeCase } from "../functions";
+import { formatDateTime, toCapitalizeCase } from "../functions";
 
 function EventItem({ id, eventType, source, to, status, occurredAt, onView }) {
   // Selección de icono SVG y filtro de color según status
   const getStatusConfig = () => {
     switch (status) {
-      case "RECEIVED":
+      case "DELIVERED":
         return {
           icon: <img src={deliveredSvg} alt="Delivered" className="event-status-icon" style={{ filter: 'brightness(0) saturate(100%) invert(54%) sepia(77%) saturate(505%) hue-rotate(77deg) brightness(97%) contrast(101%)' }} />,
           badgeClass: "status-delivered"
         };
-      case "In Queue":
+      case "InQueue":
         return {
           icon: <img src={inQueueSvg} alt="In Queue" className="event-status-icon" style={{ filter: 'brightness(0) saturate(100%) invert(81%) sepia(41%) saturate(7492%) hue-rotate(359deg) brightness(101%) contrast(101%)' }} />,
           badgeClass: "status-queue"
@@ -48,7 +48,7 @@ function EventItem({ id, eventType, source, to, status, occurredAt, onView }) {
       </div>
       <div className="event-right">
         <span className={`event-status ${badgeClass}`}>{toCapitalizeCase(status)}</span>
-        <span className="event-timestamp">{occurredAt.replace("T", " ")}</span>
+        <span className="event-timestamp">{formatDateTime(occurredAt)}</span>
         <img src={eyeEventItem} alt="View Event" className="event-view" onClick={onView} style={{ cursor: "pointer" }} />
       </div>
     </div>

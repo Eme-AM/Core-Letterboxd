@@ -1,5 +1,6 @@
 export const toCapitalizeCase = (str) => {
     if (!str) return "";
+    if (str === 'InQueue') return "In Queue";
     return str
         .split(" ")
         .map(word =>
@@ -7,3 +8,7 @@ export const toCapitalizeCase = (str) => {
         )
         .join(" ");
 }
+export const formatDateTime = (str) => {
+  if (!str) return "";
+  return str.replace("T", " ").split(".")[0];
+};

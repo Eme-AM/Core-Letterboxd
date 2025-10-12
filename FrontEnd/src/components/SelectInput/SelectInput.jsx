@@ -1,11 +1,11 @@
 import styles from './SelectInput.module.scss';
 import dropdown from '../../assets/arrow-select.png';
 
-export const SelectInput = ({ placeholder = "No Options", options = [], value, onChange }) => {
+export const SelectInput = ({ placeholder = "No Options", options = [], value, onChange, darkBg = false }) => {
     return (
         <div className={styles.wrapper}>
             <select
-                className={styles.select}
+                className={`${styles.select} ${darkBg && styles.darkBg}`}
                 value={value}
                 onChange={onChange}
             >
