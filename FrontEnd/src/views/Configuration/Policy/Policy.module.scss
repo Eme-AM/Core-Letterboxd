@@ -1,0 +1,22 @@
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    row-gap: 50px;
+    column-gap: 100px;
+    padding: 0 70px;
+
+    .item {
+        flex: 1 1 calc(50% - 50px);
+        min-width: 350px;
+    }
+}
+
+.btnWrapper {
+    width: 100%;
+    margin: 20px 0;
+}
+.btnCancelWrapper{
+    display: inline-block;
+    margin-left: 30px; 
+}
