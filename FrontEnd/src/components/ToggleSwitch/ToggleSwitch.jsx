@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import styles from "./ToggleSwitch.module.scss";
 
 const ToggleSwitch = ({ onChange, initial = false }) => { 

@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 import styles from "./ConfigurationItem.module.scss";
 import info from '../../assets/info.png';
 import { Input } from '../Input/Input';

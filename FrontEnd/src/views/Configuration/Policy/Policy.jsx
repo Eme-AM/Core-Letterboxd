@@ -30,7 +30,7 @@ function Policy({ policy, setPolicy, reloadPolicies }) {
           reloadPolicies();
         }
       })
-      .catch(err => {
+      .catch(() => {
         toast.error("Error saving policy!");
       })
       .finally(() => {

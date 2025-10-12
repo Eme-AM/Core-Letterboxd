@@ -18,7 +18,6 @@ import { toast } from 'react-toastify';
 
 function Configuration() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [selectedEvent, setSelectedEvent] = useState(null);
     const [showPolicies, setShowPolicies] = useState(true);
     const [deletePolicy, setDeletePolicy] = useState(null);
     const [contReload, setContReload] = useState(0);
@@ -67,18 +66,18 @@ function Configuration() {
                      setPolicies(res.data);
                  }
              })
-             .catch(err => {
+             /*.catch(err => {
                  //setError("No se pudieron cargar los eventos.");
              })
              .finally(() => {
                  //setLoading(false);
-             });
+             });*/
     }, [contReload]);
 
     const handlePolicyChange = (index, newValue) => {
         //Call Back
         setModules(prevModules =>
-            prevModules.map((m, i) =>
+            prevModules.map((m) =>
                 m.name === index ? { ...m, policy: newValue || undefined } : m
             )
         );
@@ -87,7 +86,7 @@ function Configuration() {
     const handleDelete = () => {
         api
             .delete(`config/policies/retry/${deletePolicy.id}`)
-            .then(res => {
+            .then(() => {
                 toast.success("Policy deleted!");
                 setPolicies(prevPolicies =>
                     prevPolicies.filter(policy => policy.id !== deletePolicy.id)
@@ -95,7 +94,7 @@ function Configuration() {
 
                 setDeletePolicy(null);
             })
-            .catch(err => {
+            .catch(() => {
                 toast.error("Error deleting policy!");
             })
             .finally(() => {

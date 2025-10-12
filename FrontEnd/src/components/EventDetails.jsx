@@ -21,12 +21,12 @@ function EventDetails({ event, onClose }) {
         .then(res => {
           res.data && setTimeline(res.data.timeline);
         })
-        .catch(err => {
+        /*.catch(err => {
           //setError("No se pudieron cargar los eventos.");
         })
         .finally(() => {
           //setLoading(false);
-        });
+        });*/
     }
   }, [event]);
 

@@ -25,7 +25,7 @@ function Messages() {
   const [totalPages, setTotalPages] = useState(1);
 
 
-
+/*
   const headers = [
     "ID",
     "Event Type",
@@ -35,7 +35,7 @@ function Messages() {
     "Date/Time",
     "Details"
   ];
-
+*/
   /*const events = [
     {
       id: "evt_0005",
@@ -93,12 +93,12 @@ function Messages() {
           setPage(0)
         }
       })
-      .catch(err => {
+     /* .catch(err => {
         //setError("No se pudieron cargar los eventos.");
       })
       .finally(() => {
         //setLoading(false);
-      });
+      });*/
   }, [moduleFilter, searchFilter, statusFilter]);
 
   useEffect(() => {
@@ -111,12 +111,12 @@ function Messages() {
           setTotalPages(Math.ceil(res.data.total / 10));
         }
       })
-      .catch(err => {
+      /*.catch(err => {
         //setError("No se pudieron cargar los eventos.");
       })
       .finally(() => {
         //setLoading(false);
-      });
+      });*/
   }, [page]);
 
   /*const filteredEvents = events.filter(event => {

@@ -1,5 +1,3 @@
-import React from "react";
-import { FaEye } from "react-icons/fa";
 import deliveredSvg from '../assets/delivered.svg';
 import failedSvg from '../assets/failed.svg';
 import inQueueSvg from '../assets/inQueue.svg';
@@ -7,7 +5,7 @@ import eyeEventItem from '../assets/eyeEventItem.svg';
 import "./EventItem.css";
 import { formatDateTime, toCapitalizeCase } from "../functions";
 
-function EventItem({ id, eventType, source, to, status, occurredAt, onView }) {
+function EventItem({ id, eventType, source, status, occurredAt, onView }) {
   // Selección de icono SVG y filtro de color según status
   const getStatusConfig = () => {
     switch (status) {
