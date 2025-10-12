@@ -1,18 +1,15 @@
 import React, { useState } from "react";
 import styles from "./ToggleSwitch.module.scss";
 
-const ToggleSwitch = ({ onChange, initial = false }) => {
-  const [active, setActive] = useState(initial);
+const ToggleSwitch = ({ onChange, initial = false }) => { 
 
-  const handleClick = () => {
-    const newState = !active;
-    setActive(newState);
-    if (onChange) onChange(newState);
+  const handleClick = () => { 
+    if (onChange) onChange(!initial);
   };
 
   return (
     <div
-      className={`${styles.toggle} ${active ? styles.active : ""}`}
+      className={`${styles.toggle} ${initial ? styles.active : ""}`}
       onClick={handleClick}
     >
       <div className={styles.circle}></div>

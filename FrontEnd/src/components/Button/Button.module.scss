@@ -24,3 +24,16 @@
         background-color: $color-btn-dark;
     }
 }
+
+.secondary {
+
+    background-color: $color-main;
+
+    &:hover {
+        background-color: $color-dark;
+    }
+
+    &:active {
+        background-color: $color-dark;
+    }
+}

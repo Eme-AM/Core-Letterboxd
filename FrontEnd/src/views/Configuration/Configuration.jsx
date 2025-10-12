@@ -12,13 +12,19 @@ import StateTag from '../../components/StateTag/StateTag';
 import SwitcherSection from './SwitcherSection/SwitcherSection';
 import GeneralConfiguration from './GeneralConfiguration/GeneralConfiguration';
 import { SelectInput } from '../../components/SelectInput/SelectInput';
+import ConfirmDeleteModal from '../../components/ConfirmDeleteModal/ConfirmDeleteModal';
+import api from '../../axios';
+import { toast } from 'react-toastify';
 
 function Configuration() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [showPolicies, setShowPolicies] = useState(true);
+    const [deletePolicy, setDeletePolicy] = useState(null);
+    const [contReload, setContReload] = useState(0);
 
     const [policy, setPolicy] = useState({});
+    const [policyEdit, setPolicyEdit] = useState(null);
     const [policies, setPolicies] = useState([
         {
             id: 1,
@@ -53,6 +59,22 @@ function Configuration() {
         }
     ]);
 
+    useEffect(() => {
+        api
+             .get(`config/policies/retry`)
+             .then(res => {
+                 if (res.data) {
+                     setPolicies(res.data);
+                 }
+             })
+             .catch(err => {
+                 //setError("No se pudieron cargar los eventos.");
+             })
+             .finally(() => {
+                 //setLoading(false);
+             });
+    }, [contReload]);
+
     const handlePolicyChange = (index, newValue) => {
         //Call Back
         setModules(prevModules =>
@@ -61,7 +83,30 @@ function Configuration() {
             )
         );
     };
-    console.log(modules)
+
+    const handleDelete = () => {
+        api
+            .delete(`config/policies/retry/${deletePolicy.id}`)
+            .then(res => {
+                toast.success("Policy deleted!");
+                setPolicies(prevPolicies =>
+                    prevPolicies.filter(policy => policy.id !== deletePolicy.id)
+                );
+
+                setDeletePolicy(null);
+            })
+            .catch(err => {
+                toast.error("Error deleting policy!");
+            })
+            .finally(() => {
+                //setLoading(false);
+            });
+    };
+
+    const reloadPolicies = () => {
+        setContReload(contReload + 1);
+    }
+
     return (
 
         <div className="dashboard-container">
@@ -71,8 +116,7 @@ function Configuration() {
                 <SwitcherSection value={showPolicies} onChange={setShowPolicies} />
                 {showPolicies ? (
                     <>
-
-                        <Policy policy={policy} setPolicy={setPolicy} />
+                        <Policy policy={policy} setPolicy={setPolicy} reloadPolicies={reloadPolicies} />
                         <ContainerSection title={'Existing Policies'} subtitle={"Events along the system’s history"}>
                             <Table
                                 headers={["Name", "Max Tries", "Delay", "Enabled", "Multiplier", "Actions"]}
@@ -84,22 +128,29 @@ function Configuration() {
                                     <StateTag state={policy.enabled ? 'Enabled' : 'Disabled'} />,
                                     policy.backoffMultiplier + 'x',
                                     <>
-                                        <img
-                                            src={edit}
-                                            alt="Ver detalles"
-                                            className={styles.icon}
-                                            onClick={() => setSelectedEvent(event)}
-                                        />
+                                        <a href='#policy'>
+                                            <img
+                                                src={edit}
+                                                alt="Edit policy"
+                                                className={styles.icon}
+                                                onClick={() => setPolicyEdit(policy)}
+                                            />
+                                        </a>
                                         <img
                                             src={deleteIcon}
-                                            alt="Ver detalles"
+                                            alt="Delete policy"
                                             className={styles.deleteIcon}
-                                            onClick={() => setSelectedEvent(event)}
+                                            onClick={() => setDeletePolicy(policy)}
                                         />
                                     </>
                                 ]}
                             />
                         </ContainerSection>
+                        {policyEdit &&
+                            <div id='policy'>
+                                <Policy policy={policyEdit} setPolicy={setPolicyEdit} reloadPolicies={reloadPolicies} />
+                            </div>
+                        }
                         <ContainerSection title={'Modules'} subtitle={"Policies asigned to each module."}>
                             <Table
                                 headers={["Module", "Policy Asigned"]}
@@ -128,10 +179,17 @@ function Configuration() {
                     <GeneralConfiguration />
                 )}
             </main>
-            {selectedEvent && (
+            {/*selectedEvent && (
                 <EventDetails
                     event={selectedEvent}
                     onClose={() => setSelectedEvent(null)}
+                />
+            )*/}
+            {deletePolicy && (
+                <ConfirmDeleteModal
+                    itemName={deletePolicy.name}
+                    onConfirm={handleDelete}
+                    onCancel={() => setDeletePolicy(null)}
                 />
             )}
         </div>

@@ -1,9 +1,9 @@
 import React from "react";
 import styles from "./Button.module.scss";
 
-const Button = ({ text, onClick }) => {
+const Button = ({ text, onClick, isSecondary }) => {
   return (
-    <button className={styles.button} onClick={onClick}>
+    <button className={`${styles.button} ${isSecondary && styles.secondary}`} onClick={onClick}>
       {text}
     </button>
   );
