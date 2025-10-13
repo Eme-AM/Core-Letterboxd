@@ -112,7 +112,11 @@
   color: #fff;
 }
 
+<<<<<<< HEAD
 .status-badge.inqueue {
+=======
+.status-badge.in-queue {
+>>>>>>> ad7b2ab2b8095c5c11c6f416f4f89c50e3d202c9
   background: #FFC107;
   color: #000;
 }
