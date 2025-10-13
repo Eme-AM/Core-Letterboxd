@@ -55,7 +55,6 @@ public class EventConsumerService {
             String payloadJson = objectMapper.writeValueAsString(message);
 
             StoredEvent storedEvent = new StoredEvent(
-                    eventId,
                     eventType,
                     eventSource,
                     "application/json",
