@@ -139,7 +139,7 @@ function Dashboard() {
         }
       })
       .catch(err => {
-        throw new Error(`HTTP ${statsRes.status}`);
+        throw new Error(`HTTP ${err.status}`);
       })
       .finally(() => {
         //setLoading(false);
@@ -159,7 +159,7 @@ function Dashboard() {
         }
       })
       .catch(err => {
-        new Error(`HTTP ${evoRes.status}`);
+        new Error(`HTTP ${err.status}`);
       })
       .finally(() => {
         //setLoading(false);
@@ -180,7 +180,7 @@ function Dashboard() {
         }
       })
       .catch(err => {
-        new Error(`HTTP ${modRes.status}`);
+        new Error(`HTTP ${err.status}`);
       })
       .finally(() => {
         //setLoading(false);
@@ -242,12 +242,12 @@ function Dashboard() {
           setEvents(res.data.events);
         }
       })
-      .catch(err => {
+      /*.catch(err => {
         //setError("No se pudieron cargar los eventos.");
       })
       .finally(() => {
         //setLoading(false);
-      });
+      });*/
     /*const recentRes = await fetch(`${API}/events?page=0&size=5&module=movies&search=inception`);
     if (!recentRes.ok) throw new Error(`HTTP ${recentRes.status}`);
     const recentJson = await recentRes.json();

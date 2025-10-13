@@ -1,5 +1,4 @@
 import appLogo from '../../assets/App Logo.png';
-import styles from './HeaderSection.module.scss';
 
 function HeaderSection({ title, subtitle }) {
     return (
