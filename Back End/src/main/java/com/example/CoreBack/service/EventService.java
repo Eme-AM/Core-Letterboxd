@@ -42,7 +42,6 @@ public class EventService {
     // Procesa y publica evento
     public StoredEvent processIncomingEvent(@Valid EventDTO eventDTO, String routingKey) {
         try {
-            String eventId = eventDTO.getId();
             String type = eventDTO.getType();
             String source = eventDTO.getSource();
             String contentType = eventDTO.getDatacontenttype();
@@ -62,7 +61,6 @@ public class EventService {
             }
 
             StoredEvent storedEvent = new StoredEvent(
-                    eventId,
                     type,
                     source,
                     contentType,

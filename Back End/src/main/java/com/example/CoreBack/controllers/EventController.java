@@ -99,7 +99,7 @@ public class EventController {
             @RequestParam(defaultValue = "movie.created") String routingKey
     ) {
         try {
-            System.out.println("📨 Recibiendo evento: " + eventDTO.getId());
+            System.out.println("📨 Recibiendo evento: " + eventDTO.getType());
             System.out.println("🔑 Routing Key: " + routingKey);
             
             // Enviar a RabbitMQ
@@ -113,7 +113,6 @@ public class EventController {
             
             return ResponseEntity.ok(Map.of(
                     "status", "sent_to_queue",
-                    "eventId", eventDTO.getId(),
                     "routingKey", routingKey
             ));
         } catch (Exception e) {

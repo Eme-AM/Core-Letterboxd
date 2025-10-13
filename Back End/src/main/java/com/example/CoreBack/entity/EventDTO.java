@@ -9,8 +9,7 @@ import jakarta.validation.constraints.NotNull;
 
 public class EventDTO {
 
-    @NotBlank(message = "El campo 'id' es obligatorio")
-    private String id;  // ID del evento que mandan los módulos
+    
 
     @NotBlank(message = "El campo 'type' es obligatorio")
     private String type; // Ej: "user.created"
@@ -30,8 +29,6 @@ public class EventDTO {
     public EventDTO() {}
 
     // Getters y Setters
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
 
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }

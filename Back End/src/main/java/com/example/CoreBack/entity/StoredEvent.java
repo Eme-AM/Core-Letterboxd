@@ -31,9 +31,8 @@ public class StoredEvent {
 
     public StoredEvent() {}
 
-    public StoredEvent(String eventId, String eventType, String source,
+    public StoredEvent(String eventType, String source,
                        String contentType, String payload, LocalDateTime occurredAt) {
-        this.eventId = eventId;
         this.eventType = eventType;
         this.source = source;
         this.contentType = contentType;
