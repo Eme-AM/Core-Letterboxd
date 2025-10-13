@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -76,21 +77,34 @@ public class EventService {
     // 🔍 Listar con filtros
     public Map<String, Object> getAllEvents(int page, int size, String module, String status, String search) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "occurredAt"));
-        Page<StoredEvent> events = eventRepository.findAll(pageable);
-
-        List<StoredEvent> filtered = events.getContent().stream()
-                .filter(e -> module == null || e.getSource().toLowerCase().contains(module.toLowerCase()))
-                .filter(e -> search == null || e.getPayload().toLowerCase().contains(search.toLowerCase()))
-                .filter(e -> status == null || e.getStatus().equalsIgnoreCase(status))
-                .collect(Collectors.toList());
-
+    
+        Specification<StoredEvent> spec = Specification.where(null);
+    
+        if (module != null && !module.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.like(cb.lower(root.get("source")), "%" + module.toLowerCase() + "%"));
+        }
+    
+        if (status != null && !status.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(cb.lower(root.get("status")), status.toLowerCase()));
+        }
+    
+        if (search != null && !search.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.like(cb.lower(root.get("payload")), "%" + search.toLowerCase() + "%"));
+        }
+    
+        Page<StoredEvent> filteredPage = eventRepository.findAll(spec, pageable);
+    
         return Map.of(
                 "page", page,
                 "size", size,
-                "total", events.getTotalElements(),
-                "events", filtered
+                "total", filteredPage.getTotalElements(),
+                "events", filteredPage.getContent()
         );
     }
+    
 
     // 📊 Estadísticas globales
     public Map<String, Object> getGlobalStats() {
