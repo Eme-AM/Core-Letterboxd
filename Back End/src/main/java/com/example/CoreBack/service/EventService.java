@@ -173,19 +173,37 @@ public class EventService {
         return evolution;
     }
 
-    // 🧩 Agrupación por módulo
+    // Agrupación por módulo
     public Map<String, Long> getEventsPerModule() {
-        return eventRepository.findAll().stream()
+        // Lista de módulos conocidos
+        List<String> modules = List.of("usuarios", "social", "reviews", "peliculas", "discovery");
+    
+        // Conteo real
+        Map<String, Long> counts = eventRepository.findAll().stream()
+                .filter(e -> e.getSource() != null)
                 .collect(Collectors.groupingBy(
                         e -> {
                             String source = e.getSource().toLowerCase();
-                            if (source.contains("user")) return "users";
-                            if (source.contains("movie")) return "movies";
+                            if (source.contains("user") || source.contains("usuario")) return "usuarios";
+                            if (source.contains("social")) return "social";
+                            if (source.contains("review")) return "reviews";
+                            if (source.contains("movie") || source.contains("pelicula")) return "peliculas";
                             if (source.contains("discovery")) return "discovery";
-                            if (source.contains("analytics")) return "analytics";
-                            return "others";
+                            return null;
                         },
                         Collectors.counting()
                 ));
+    
+                        
+        Map<String, Long> result = new LinkedHashMap<>();
+        for (String module : modules) {
+            result.put(module, counts.getOrDefault(module, 0L));
+        }
+    
+        return result;
     }
+    
+    
+    
+
 }
