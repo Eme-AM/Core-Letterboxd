@@ -3,11 +3,13 @@ package com.example.CoreBack.service;
 import com.example.CoreBack.entity.StoredEvent;
 import com.example.CoreBack.repository.EventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
+import com.rabbitmq.client.Channel;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -24,36 +26,28 @@ public class EventConsumerService {
         this.objectMapper = objectMapper;
     }
 
-    @PostConstruct
-    public void init() {
-        System.out.println("===========================================");
-        System.out.println("🎧 EventConsumerService INICIADO");
-        System.out.println("📡 Escuchando solo la cola principal: " + CORE_ALL_QUEUE);
-        System.out.println("===========================================");
-    }
-
-    /**
-     * 📨 Escucha la cola principal (core.all.queue)
-     * y guarda cada evento recibido en la base de datos.
-     */
-    @RabbitListener(queues = CORE_ALL_QUEUE)
+    @RabbitListener(queues = CORE_ALL_QUEUE, ackMode = "MANUAL")
     @Transactional
-    public void receiveAllEvents(Map<String, Object> message) {
-        System.out.println("📥 [ALL QUEUE] Evento recibido: " + message);
-
-        // Validación básica
-        if (message == null || message.isEmpty()) {
-            System.out.println("⚠️ Evento vacío recibido, ignorado.");
-            return;
-        }
+    public void receiveAllEvents(Map<String, Object> message, Channel channel, Message amqpMessage) throws IOException {
+        long deliveryTag = amqpMessage.getMessageProperties().getDeliveryTag();
 
         try {
+            System.out.println("📥 [ALL QUEUE] Event received: " + message);
+
+            if (message == null || message.isEmpty()) {
+                System.out.println("⚠️ Empty event received, ignored.");
+                channel.basicAck(deliveryTag, false);
+                return;
+            }
+
+            // Extract event data
             String eventId = (String) message.getOrDefault("id", "unknown");
             String eventType = (String) message.getOrDefault("type", "UNKNOWN");
             String eventSource = (String) message.getOrDefault("source", "unknown");
 
             String payloadJson = objectMapper.writeValueAsString(message);
 
+            // Build and store event
             StoredEvent storedEvent = new StoredEvent(
                     eventType,
                     eventSource,
@@ -62,12 +56,21 @@ public class EventConsumerService {
                     LocalDateTime.now()
             );
 
+            storedEvent.setEventId(eventId);
+            storedEvent.setStatus("Delivered"); // 👈 Cambia de "InQueue" → "Delivered"
+
             eventRepository.save(storedEvent);
-            System.out.println("✅ Evento guardado correctamente (type=" + eventType + ", id=" + eventId + ")");
+
+            System.out.println("✅ Event saved with status = Delivered (type=" + eventType + ", id=" + eventId + ")");
+
+            // Confirm the message to RabbitMQ
+            channel.basicAck(deliveryTag, false);
 
         } catch (Exception e) {
-            System.err.println("❌ Error procesando evento recibido: " + e.getMessage());
+            System.err.println("❌ Error processing event: " + e.getMessage());
             e.printStackTrace();
+            // Requeue the message for retry
+            channel.basicNack(deliveryTag, false, true);
         }
     }
 }
