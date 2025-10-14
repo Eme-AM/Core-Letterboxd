@@ -1,4 +1,4 @@
-@use '../../../variables' as *;
+@use '../../variables' as *;
 
 .table {
     border-radius: 10px;
@@ -38,7 +38,7 @@
 
     .cell {
         //width: calc(100% / 7);
-        width: calc(100% / 6);
+        width: calc(100% / var(--cols));
         min-width: 140px;
         display: flex;
         align-items: center;
@@ -46,15 +46,8 @@
     }
 }
 
-.icon {
-    cursor: pointer;
-}
 
 .headerRow {
     font-size: 20px;
     font-weight: $font-weight-medium;
-}
-
-.dateTime {
-    width: 140px;
-}
+} 

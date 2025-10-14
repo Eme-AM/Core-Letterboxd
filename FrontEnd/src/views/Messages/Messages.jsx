@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import Events from './Events/Events';
 import ContainerSection from '../../components/ContainerSection/ContainerSection';
 import Filters from './Filters/Filters';
 import { useEffect, useState } from 'react';
@@ -9,6 +8,11 @@ import styles from "./Messages.module.scss";
 import api from '../../axios';
 import arrow from '../../assets/arrow.png';
 import HeaderSection from '../../components/HeaderPage/HeaderPage';
+import Table from '../../components/Table/Table';
+import EventTypeTag from '../../components/EventTypeTag/EventTypeTag';
+import { formatDateTime, toCapitalizeCase } from '../../functions';
+import StateTag from '../../components/StateTag/StateTag';
+import eyeIcon from '../../assets/eye.png';
 
 function Messages() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -21,7 +25,7 @@ function Messages() {
   const [totalPages, setTotalPages] = useState(1);
 
 
-
+/*
   const headers = [
     "ID",
     "Event Type",
@@ -31,7 +35,7 @@ function Messages() {
     "Date/Time",
     "Details"
   ];
-
+*/
   /*const events = [
     {
       id: "evt_0005",
@@ -86,16 +90,17 @@ function Messages() {
         if (res.data) {
           setEvents(res.data.events);
           setTotalPages(Math.ceil(res.data.total / 10));
+          setPage(0)
         }
       })
-      .catch(err => {
+     /* .catch(err => {
         //setError("No se pudieron cargar los eventos.");
       })
       .finally(() => {
         //setLoading(false);
-      });
+      });*/
   }, [moduleFilter, searchFilter, statusFilter]);
-  
+
   useEffect(() => {
     api
       //.get("events?page=0&size=5&module=movies&search=inception")
@@ -106,12 +111,12 @@ function Messages() {
           setTotalPages(Math.ceil(res.data.total / 10));
         }
       })
-      .catch(err => {
+      /*.catch(err => {
         //setError("No se pudieron cargar los eventos.");
       })
       .finally(() => {
         //setLoading(false);
-      });
+      });*/
   }, [page]);
 
   /*const filteredEvents = events.filter(event => {
@@ -146,7 +151,23 @@ function Messages() {
           />
         </ContainerSection>
         <ContainerSection title={'List of Events'} subtitle={"Events along the system’s history"}>
-          <Events headers={headers} events={events} setEvent={setSelectedEvent} />
+          <Table
+            headers={["ID", "Event Type", "Origin", "State", "Date/Time", "Details"]}
+            data={events}
+            renderRow={(event) => [
+              event.id.toString().padStart(4, "0"),
+              <EventTypeTag>{event.eventType}</EventTypeTag>,
+              toCapitalizeCase(event.source.replace("/", " ").replace("/api", "")),
+              <StateTag state={event.status} />,
+              <div className={styles.dateTime}>{formatDateTime(event.occurredAt)}</div>,
+              <img
+                src={eyeIcon}
+                alt="Ver detalles"
+                className={styles.icon}
+                onClick={() => setSelectedEvent(event)}
+              />,
+            ]}
+          />
           <div className={styles.pagination}>
             {page > 0 && (
               <button
@@ -158,6 +179,7 @@ function Messages() {
 
             <div className={styles.pageNumbers}>
               {Array.from({ length: totalPages }).map((_, i) => (
+                (i <= page + 2 && i >= page || i >= page - 2 && i <= page) &&
                 <button
                   key={i}
                   className={`${styles.pageButton} ${i === page ? styles.active : ''}`}

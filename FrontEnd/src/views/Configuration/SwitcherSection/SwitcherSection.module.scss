@@ -1,0 +1,36 @@
+@use '../../../variables' as *;
+
+.switch {
+  display: flex;
+  align-items: center;
+  background-color: $color-section;
+  border-radius: 10px;
+  padding: 5px 7px; 
+  box-sizing: border-box; 
+  width: 100%;
+  gap: 15px;
+  height: 54px;
+}
+
+.option {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #ffffffcc;
+  font-weight: $font-weight-bold;
+  font-size: 18px;
+  padding: 8px 24px;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: #ffffff;
+  }
+}
+
+.active {
+  background-color: $color-main;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+}

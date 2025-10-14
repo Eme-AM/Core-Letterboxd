@@ -59,7 +59,7 @@ function Dashboard() {
         }
       })
       .catch(err => {
-        throw new Error(`HTTP ${statsRes.status}`);
+        throw new Error(`HTTP ${err.status}`);
       })
       .finally(() => {
         //setLoading(false);
@@ -82,7 +82,7 @@ function Dashboard() {
         }
       })
       .catch(err => {
-        new Error(`HTTP ${evoRes.status}`);
+        new Error(`HTTP ${err.status}`);
       })
       .finally(() => {
         //setLoading(false);
@@ -102,7 +102,7 @@ function Dashboard() {
         }
       })
       .catch(err => {
-        new Error(`HTTP ${modRes.status}`);
+        new Error(`HTTP ${err.status}`);
       })
       .finally(() => {
         //setLoading(false);
@@ -115,7 +115,7 @@ function Dashboard() {
           setEvents(res.data.events);
         }
       })
-      .catch(err => {
+      /*.catch(err => {
         //setError("No se pudieron cargar los eventos.");
       })
       .finally(() => {

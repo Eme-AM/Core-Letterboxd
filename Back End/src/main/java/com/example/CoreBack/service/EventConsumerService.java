@@ -3,15 +3,17 @@ package com.example.CoreBack.service;
 import com.example.CoreBack.entity.StoredEvent;
 import com.example.CoreBack.repository.EventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
+import com.rabbitmq.client.Channel;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Map;
 
-import static com.example.CoreBack.config.RabbitConfig.*;
+import static com.example.CoreBack.config.RabbitConfig.CORE_ALL_QUEUE;
 
 @Service
 public class EventConsumerService {
@@ -22,99 +24,53 @@ public class EventConsumerService {
     public EventConsumerService(EventRepository eventRepository, ObjectMapper objectMapper) {
         this.eventRepository = eventRepository;
         this.objectMapper = objectMapper;
-        System.out.println("🔧 EventConsumerService CONSTRUCTOR llamado");
     }
 
-    @PostConstruct
-    public void init() {
-        System.out.println("===========================================");
-        System.out.println("🎧 EventConsumerService INICIADO");
-        System.out.println("📡 Listeners configurados para:");
-        System.out.println("   - " + CORE_ALL_QUEUE);
-        System.out.println("   - " + CORE_MOVIES_QUEUE);
-        System.out.println("   - " + CORE_USERS_QUEUE);
-        System.out.println("   - " + CORE_RATINGS_QUEUE);
-        System.out.println("   - " + CORE_SOCIAL_QUEUE);
-        System.out.println("   - " + CORE_ANALYTICS_QUEUE);
-        System.out.println("   - " + CORE_RECOMMENDATIONS_QUEUE);
-        System.out.println("===========================================");
-    }
-
-    @RabbitListener(queues = CORE_ALL_QUEUE)
+    @RabbitListener(queues = CORE_ALL_QUEUE, ackMode = "MANUAL")
     @Transactional
-    public void receiveAllEvents(Map<String, Object> message) {
-        System.out.println("📥 [ALL QUEUE] ===== MENSAJE RECIBIDO ===== ");
-        System.out.println("📥 [ALL QUEUE] Contenido: " + message);
-        saveEvent(message, "ALL");
-    }
+    public void receiveAllEvents(Map<String, Object> message, Channel channel, Message amqpMessage) throws IOException {
+        long deliveryTag = amqpMessage.getMessageProperties().getDeliveryTag();
 
-    @RabbitListener(queues = CORE_MOVIES_QUEUE)
-    @Transactional
-    public void receiveMovieEvents(Map<String, Object> message) {
-        System.out.println("🎬 [MOVIES QUEUE] ===== MENSAJE RECIBIDO ===== ");
-        System.out.println("🎬 [MOVIES QUEUE] Contenido: " + message);
-        
-    }
-
-    @RabbitListener(queues = CORE_USERS_QUEUE)
-    @Transactional
-    public void receiveUserEvents(Map<String, Object> message) {
-        System.out.println("👤 [USERS QUEUE] ===== MENSAJE RECIBIDO =====");
-        System.out.println("👤 [USERS QUEUE] Contenido: " + message);
-        
-    }
-
-    @RabbitListener(queues = CORE_RATINGS_QUEUE)
-    @Transactional
-    public void receiveRatingEvents(Map<String, Object> message) {
-        System.out.println("⭐ [RATINGS QUEUE] ===== MENSAJE RECIBIDO =====");
-        
-    }
-
-    @RabbitListener(queues = CORE_SOCIAL_QUEUE)
-    @Transactional
-    public void receiveSocialEvents(Map<String, Object> message) {
-        System.out.println("🤝 [SOCIAL QUEUE] ===== MENSAJE RECIBIDO =====");
-        
-    }
-
-    @RabbitListener(queues = CORE_ANALYTICS_QUEUE)
-    @Transactional
-    public void receiveAnalyticsEvents(Map<String, Object> message) {
-        System.out.println("📊 [ANALYTICS QUEUE] ===== MENSAJE RECIBIDO =====");
-        
-    }
-
-    @RabbitListener(queues = CORE_RECOMMENDATIONS_QUEUE)
-    @Transactional
-    public void receiveRecommendationsEvents(Map<String, Object> message) {
-        System.out.println("💡 [RECOMMENDATIONS QUEUE] ===== MENSAJE RECIBIDO =====");
-        
-    }
-
-    private void saveEvent(Map<String, Object> message, String queueType) {
         try {
+            System.out.println("📥 [ALL QUEUE] Event received: " + message);
+
+            if (message == null || message.isEmpty()) {
+                System.out.println("⚠️ Empty event received, ignored.");
+                channel.basicAck(deliveryTag, false);
+                return;
+            }
+
+            // Extract event data
             String eventId = (String) message.getOrDefault("id", "unknown");
-            
-            System.out.println("💾 [" + queueType + "] Guardando evento ID: " + eventId);
+            String eventType = (String) message.getOrDefault("type", "UNKNOWN");
+            String eventSource = (String) message.getOrDefault("source", "unknown");
 
             String payloadJson = objectMapper.writeValueAsString(message);
 
+            // Build and store event
             StoredEvent storedEvent = new StoredEvent(
-                    eventId,
-                    (String) message.getOrDefault("type", "UNKNOWN"),
-                    (String) message.getOrDefault("source", "unknown"),
+                    eventType,
+                    eventSource,
                     "application/json",
                     payloadJson,
                     LocalDateTime.now()
             );
 
-            StoredEvent saved = eventRepository.save(storedEvent);
-            System.out.println("✅ [" + queueType + "] Evento guardado con ID DB = " + saved.getId());
+            storedEvent.setEventId(eventId);
+            storedEvent.setStatus("Delivered"); // 👈 Cambia de "InQueue" → "Delivered"
+
+            eventRepository.save(storedEvent);
+
+            System.out.println("✅ Event saved with status = Delivered (type=" + eventType + ", id=" + eventId + ")");
+
+            // Confirm the message to RabbitMQ
+            channel.basicAck(deliveryTag, false);
 
         } catch (Exception e) {
-            System.err.println("❌ [" + queueType + "] ERROR: " + e.getMessage());
+            System.err.println("❌ Error processing event: " + e.getMessage());
             e.printStackTrace();
+            // Requeue the message for retry
+            channel.basicNack(deliveryTag, false, true);
         }
     }
 }

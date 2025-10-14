@@ -21,8 +21,8 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Build with Maven
-      run: mvn -f "Back End/pom.xml" clean package
+    - name: Build with Maven (prod)
+      run: mvn -f "Back End/pom.xml" clean package -Pprod -DskipTests
 
     - name: Deploy to Elastic Beanstalk
       uses: einaregilsson/beanstalk-deploy@v21
@@ -32,5 +32,7 @@ jobs:
         application_name: Core-letterboxd
         environment_name: Core-letterboxd-env
         region: us-east-2
-        version_label: v-${{ github.run_id }}
-        deployment_package: "Back End/target/application.jar"
+        version_label: v-${{ github.sha }}
+        version_description: "${{ github.event.head_commit.message }}"
+        deployment_package: "Back End/target/CoreBack-0.0.1-SNAPSHOT.jar"
+        existing_bucket_name: elasticbeanstalk-us-east-2-168023420665

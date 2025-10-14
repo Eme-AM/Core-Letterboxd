@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Application Properties ###
+### prueba 8###
+src/main/resources/application-local.properties

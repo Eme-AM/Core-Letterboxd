@@ -4,38 +4,38 @@ import TimelineItem from "../views/TimelineItem/TimelineItem";
 import deliveredSvg from '../assets/delivered.svg';
 import failedSvg from '../assets/failed.svg';
 import inQueueSvg from '../assets/inQueue.svg';
-import { toCapitalizeCase } from "../functions";
+import { formatDateTime, toCapitalizeCase } from "../functions";
 import api from "../axios";
 
 
 function EventDetails({ event, onClose }) {
-  if (!event) return null;
 
 
   const [activeTab, setActiveTab] = useState("details");
   const [timeline, setTimeline] = useState("details");
 
-
   useEffect(() => {
-    if (event !== null) {
-      api 
+    if (event) {
+      api
         .get(`events/${event.id}`)
         .then(res => {
           res.data && setTimeline(res.data.timeline);
         })
-        .catch(err => {
+        /*.catch(err => {
           //setError("No se pudieron cargar los eventos.");
         })
         .finally(() => {
           //setLoading(false);
-        });
+        });*/
     }
   }, [event]);
+
+  if (!event) return null;
 
   // Selección de ícono SVG y filtro de color según status
   let statusIcon, statusIconStyle;
   switch (event.status) {
-    case 'RECEIVED':
+    case 'DELIVERED':
       statusIcon = deliveredSvg;
       statusIconStyle = { filter: 'invert(56%) sepia(77%) saturate(453%) hue-rotate(90deg) brightness(92%) contrast(92%)' };
       break;
@@ -43,7 +43,7 @@ function EventDetails({ event, onClose }) {
       statusIcon = failedSvg;
       statusIconStyle = { filter: 'invert(34%) sepia(99%) saturate(7492%) hue-rotate(357deg) brightness(97%) contrast(101%)' };
       break;
-    case 'In Queue':
+    case 'InQueue':
       statusIcon = inQueueSvg;
       statusIconStyle = { filter: 'invert(24%) sepia(76%) saturate(1802%) hue-rotate(359deg) brightness(103%) contrast(105%)' };
 
@@ -80,7 +80,7 @@ function EventDetails({ event, onClose }) {
           </div>
           <span
 
-            className={`status-badge ${event.status.toLowerCase().replace(" ", "-")}`}
+            className={`status-badge ${event.status.toLowerCase()}`}
 
           >
             {toCapitalizeCase(event.status)}
@@ -142,7 +142,7 @@ function EventDetails({ event, onClose }) {
               </div></div>*/}
               <div className="row">
                 <span className="label">Date/Time</span>
-                <span className="value">{event.occurredAt.replace("T", " ")}</span>
+                <span className="value">{formatDateTime(event.occurredAt)}</span>
               </div>
             </>
           )}
@@ -159,7 +159,7 @@ function EventDetails({ event, onClose }) {
                 <TimelineItem
                   key={index}
                   name={t.step}
-                  timestamp={t.time.replace("T", " ")}
+                  timestamp={formatDateTime(t.time)}
                 />
               ))
             ) : (
