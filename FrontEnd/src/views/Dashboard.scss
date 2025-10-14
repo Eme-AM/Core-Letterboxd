@@ -237,6 +237,22 @@ $color-badge: #FF0035;
   }
 }
 
+// Estilo para el tooltip de recharts (hover en los gráficos)
+.recharts-tooltip-wrapper {
+  z-index: 10;
+}
+
+.recharts-default-tooltip {
+  background: rgba(255,255,255,0.1); // blanco translúcido
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  color: #222; // texto oscuro para contraste
+  font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+  font-size: 15px;
+  padding: 14px 18px;
+  border: none;
+}
+
 // Responsividad
 @media (max-width: 900px) {
   .dashboard-main {

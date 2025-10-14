@@ -69,10 +69,14 @@ function Dashboard() {
       .get(`events/evolution`)
       .then(res => {
         if (res.data) {
-          const formattedData = res.data.map(item => ({
-            time: item.hour.toString().padStart(2, '0') + "hs",
-            value: item.count
-          }));
+          const formattedData = res.data.map(item => {
+            // Restar 3 horas y ajustar el rango
+            const hourAdjusted = ((item.hour - 3 + 24) % 24);
+            return {
+              time: hourAdjusted.toString().padStart(2, '0') + "hs",
+              value: item.count
+            };
+          });
 
           setEventsEvolutionData(formattedData);
         }
