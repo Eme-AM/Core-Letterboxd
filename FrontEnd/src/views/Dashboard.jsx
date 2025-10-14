@@ -115,7 +115,7 @@ function Dashboard() {
           setEvents(res.data.events);
         }
       })
-      /*.catch(err => {
+      .catch(err => {
         //setError("No se pudieron cargar los eventos.");
       })
       .finally(() => {
