@@ -1,5 +1,17 @@
 package com.example.CoreBack.service;
 
+import com.example.CoreBack.entity.EventDTO;
+import com.example.CoreBack.entity.StoredEvent;
+import com.example.CoreBack.repository.EventRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Valid;
+import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -80,21 +92,34 @@ public class EventService {
     // 🔍 Listar con filtros
     public Map<String, Object> getAllEvents(int page, int size, String module, String status, String search) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "occurredAt"));
-        Page<StoredEvent> events = eventRepository.findAll(pageable);
-
-        List<StoredEvent> filtered = events.getContent().stream()
-                .filter(e -> module == null || e.getSource().toLowerCase().contains(module.toLowerCase()))
-                .filter(e -> search == null || e.getPayload().toLowerCase().contains(search.toLowerCase()))
-                .filter(e -> status == null || e.getStatus().equalsIgnoreCase(status))
-                .collect(Collectors.toList());
-
+    
+        Specification<StoredEvent> spec = Specification.where(null);
+    
+        if (module != null && !module.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.like(cb.lower(root.get("source")), "%" + module.toLowerCase() + "%"));
+        }
+    
+        if (status != null && !status.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(cb.lower(root.get("status")), status.toLowerCase()));
+        }
+    
+        if (search != null && !search.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.like(cb.lower(root.get("payload")), "%" + search.toLowerCase() + "%"));
+        }
+    
+        Page<StoredEvent> filteredPage = eventRepository.findAll(spec, pageable);
+    
         return Map.of(
                 "page", page,
                 "size", size,
-                "total", events.getTotalElements(),
-                "events", filtered
+                "total", filteredPage.getTotalElements(),
+                "events", filteredPage.getContent()
         );
     }
+    
 
     // 📊 Estadísticas globales
     public Map<String, Object> getGlobalStats() {
@@ -177,19 +202,37 @@ public class EventService {
         return evolution;
     }
 
-    // 🧩 Agrupación por módulo
+    // Agrupación por módulo
     public Map<String, Long> getEventsPerModule() {
-        return eventRepository.findAll().stream()
+        // Lista de módulos conocidos
+        List<String> modules = List.of("usuarios", "social", "reviews", "peliculas", "discovery");
+    
+        // Conteo real
+        Map<String, Long> counts = eventRepository.findAll().stream()
+                .filter(e -> e.getSource() != null)
                 .collect(Collectors.groupingBy(
                         e -> {
                             String source = e.getSource().toLowerCase();
-                            if (source.contains("user")) return "users";
-                            if (source.contains("movie")) return "movies";
+                            if (source.contains("user") || source.contains("usuario")) return "usuarios";
+                            if (source.contains("social")) return "social";
+                            if (source.contains("review")) return "reviews";
+                            if (source.contains("movie") || source.contains("pelicula")) return "peliculas";
                             if (source.contains("discovery")) return "discovery";
-                            if (source.contains("analytics")) return "analytics";
-                            return "others";
+                            return null;
                         },
                         Collectors.counting()
                 ));
+    
+                        
+        Map<String, Long> result = new LinkedHashMap<>();
+        for (String module : modules) {
+            result.put(module, counts.getOrDefault(module, 0L));
+        }
+    
+        return result;
     }
+    
+    
+    
+
 }
