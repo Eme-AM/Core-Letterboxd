@@ -162,8 +162,8 @@ class EventDTOTest {
     }
 
     @Test
-    @DisplayName("EventDTO con sysDate nulo debe fallar validación")
-    void eventDTOWithNullSysDate_ShouldFailValidation() {
+    @DisplayName("EventDTO con sysDate nulo debe ser válido (campo opcional)")
+    void eventDTOWithNullSysDate_ShouldBeValid() {
         // Given
         EventDTO eventDTO = EventTestDataFactory.createValidEventDTO();
         eventDTO.setSysDate(null);
@@ -172,9 +172,7 @@ class EventDTOTest {
         Set<ConstraintViolation<EventDTO>> violations = validator.validate(eventDTO);
 
         // Then
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-            .isEqualTo("El campo 'SysDate' es obligatorio");
+        assertThat(violations).hasSize(0);
     }
 
     @Test
@@ -188,15 +186,14 @@ class EventDTOTest {
         Set<ConstraintViolation<EventDTO>> violations = validator.validate(eventDTO);
 
         // Then
-        assertThat(violations).hasSize(6); // 6 campos obligatorios
+        assertThat(violations).hasSize(5); // 5 campos obligatorios (sysDate is optional)
         
         Set<String> violationMessages = Set.of(
             "El campo 'id' es obligatorio",
             "El campo 'type' es obligatorio", 
             "El campo 'source' es obligatorio",
             "El campo 'datacontenttype' es obligatorio",
-            "El campo 'data' es obligatorio",
-            "El campo 'SysDate' es obligatorio"
+            "El campo 'data' es obligatorio"
         );
 
         violations.forEach(violation -> {
@@ -258,7 +255,7 @@ class EventDTOTest {
         assertThat(validator.validate(stringDataEvent)).isEmpty();
 
         // Data con números
-        EventDTO numericDataEvent = EventTestDataFactory.createRatingEvent();
+        EventDTO numericDataEvent = EventTestDataFactory.createRatingEvent("user123", "movie456", 4.5);
         assertThat(validator.validate(numericDataEvent)).isEmpty();
 
         // Data con arrays

@@ -1,117 +1,160 @@
 package com.example.CoreBack.testutils;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import com.example.CoreBack.entity.EventDTO;
 import com.example.CoreBack.entity.StoredEvent;
 
+/**
+ * Factory para crear objetos EventDTO y StoredEvent para tests
+ * Adaptado a la estructura limpia del core (solo campos básicos del CloudEvent)
+ */
 public class EventTestDataFactory {
     
     public static StoredEvent createStoredEvent(String eventType, String eventData) {
         return new StoredEvent(eventType, eventData, "test_stream_name", "test_stream", "test_partition", LocalDateTime.now());
     }
     
+    /**
+     * Crea un evento de usuario con estructura básica
+     */
     public static EventDTO createUserEvent(String userId) {
         EventDTO event = new EventDTO();
         event.setId("user-event-" + System.currentTimeMillis());
-        event.setEventType("user_action");
-        event.setSource("/users/action");
+        event.setType("user.created");
+        event.setSource("/users/signup");
         event.setDatacontenttype("application/json");
         event.setSysDate(LocalDateTime.now());
-        event.setUserId(userId);
-        event.setEventData("{\"action\": \"test_action\"}");
+        
+        // Todos los datos específicos van en el Map data
+        Map<String, Object> eventData = new HashMap<>();
+        eventData.put("userId", userId);
+        eventData.put("action", "user_creation");
+        event.setData(eventData);
+        
         return event;
     }
     
+    /**
+     * Crea un evento de película
+     */
     public static EventDTO createMovieEvent(String movieId) {
         EventDTO event = new EventDTO();
         event.setId("movie-event-" + System.currentTimeMillis());
-        event.setEventType("movie_action");
-        event.setSource("/movies/action");
+        event.setType("movie.created");
+        event.setSource("/movies/create");
         event.setDatacontenttype("application/json");
         event.setSysDate(LocalDateTime.now());
-        event.setMovieId(movieId);
-        event.setEventData("{\"movie\": \"test_movie\"}");
+        
+        Map<String, Object> eventData = new HashMap<>();
+        eventData.put("movieId", movieId);
+        eventData.put("action", "movie_creation");
+        event.setData(eventData);
+        
         return event;
     }
     
-    public static EventDTO createRatingEvent() {
+    /**
+     * Crea un evento de rating
+     */
+    public static EventDTO createRatingEvent(String userId, String movieId, Double rating) {
         EventDTO event = new EventDTO();
         event.setId("rating-event-" + System.currentTimeMillis());
-        event.setEventType("rating");
+        event.setType("rating.created");
         event.setSource("/ratings/create");
         event.setDatacontenttype("application/json");
         event.setSysDate(LocalDateTime.now());
-        event.setUserId("user1");
-        event.setMovieId("movie1");
-        event.setRating(5.0);
-        event.setEventData("{\"rating\": 5.0}");
+        
+        Map<String, Object> eventData = new HashMap<>();
+        eventData.put("userId", userId);
+        eventData.put("movieId", movieId);
+        eventData.put("rating", rating);
+        event.setData(eventData);
+        
         return event;
     }
     
+    /**
+     * Crea un evento con data compleja para tests
+     */
     public static EventDTO createEventDTOWithComplexData() {
         EventDTO event = new EventDTO();
         event.setId("complex-event-" + System.currentTimeMillis());
-        event.setEventType("complex_action");
+        event.setType("complex.action");
         event.setSource("/complex/action");
         event.setDatacontenttype("application/json");
         event.setSysDate(LocalDateTime.now());
-        event.setUserId("user1");
-        event.setMovieId("movie1");
-        event.setRating(4.5);
-        event.setReview("Great movie!");
         
         // Create complex data map
         Map<String, Object> complexData = new HashMap<>();
         complexData.put("movieId", "movie1");
         complexData.put("rating", 4.5);
         complexData.put("review", "Great movie!");
-        complexData.put("tags", List.of("action", "sci-fi"));
-        complexData.put("user", Map.of("id", "user1", "name", "Test User"));
+        complexData.put("userId", "user1");
+        
+        // Nested data
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("id", "user1");
+        userInfo.put("name", "Test User");
+        complexData.put("user", userInfo);
+        
+        // Add tags
+        complexData.put("tags", Arrays.asList("drama", "romance", "thriller"));
         
         event.setData(complexData);
-        event.setEventData("{\"movieId\":\"movie1\",\"rating\":4.5,\"review\":\"Great movie!\"}");
         return event;
     }
     
+    /**
+     * Crea un evento válido básico
+     */
     public static EventDTO createValidEventDTO() {
         EventDTO event = new EventDTO();
         event.setId("test-event-123");
-        event.setEventType("user.created");
+        event.setType("user.created");
         event.setSource("/users/signup");
         event.setDatacontenttype("application/json");
         event.setSysDate(LocalDateTime.now());
-        event.setUserId("12345");
-        event.setEventData("{\"userId\":\"12345\",\"email\":\"user@example.com\"}");
+        
+        Map<String, Object> eventData = new HashMap<>();
+        eventData.put("userId", "12345");
+        eventData.put("email", "user@example.com");
+        event.setData(eventData);
+        
         return event;
     }
     
+    /**
+     * Crea un evento de usuario creado con parámetros específicos
+     */
     public static EventDTO createUserCreatedEvent(Long userId, String email, String username) {
         EventDTO event = new EventDTO();
-        event.setId("user-event-" + userId);
-        event.setEventType("user.created");
+        event.setId("user-created-" + userId);
+        event.setType("user.created");
         event.setSource("/users/signup");
         event.setDatacontenttype("application/json");
         event.setSysDate(LocalDateTime.now());
-        // Use Long directly to match test expectations and store all data
-        if (event.getData() == null) {
-            event.setData(new java.util.HashMap<>());
-        }
-        event.getData().put("userId", userId); // Store as Long, not String
-        event.getData().put("email", email);   // Store email
-        event.getData().put("username", username); // Store username
-        event.setEventData("{\"userId\":\"" + userId + "\",\"username\":\"" + username + "\",\"email\":\"" + email + "\"}");
+        
+        Map<String, Object> eventData = new HashMap<>();
+        eventData.put("userId", userId);
+        eventData.put("username", username);
+        eventData.put("email", email);
+        event.setData(eventData);
+        
         return event;
     }
     
+    /**
+     * Crea un evento inválido para tests de validación
+     */
     public static EventDTO createInvalidEventDTO() {
         EventDTO event = new EventDTO();
         // Missing required fields intentionally to trigger validation errors
         // Only set some fields, leave others null
-        // Missing: id, type, source, datacontenttype, sysDate
+        // Missing: id, type, source, datacontenttype, data
         return event;
     }
 }

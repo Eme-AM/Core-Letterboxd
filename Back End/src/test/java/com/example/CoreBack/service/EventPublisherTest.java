@@ -14,16 +14,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpTemplate;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
 
 /**
  * Tests unitarios para EventPublisher services.
  * Verifica la publicación de eventos a RabbitMQ con diferentes escenarios.
  */
 @ExtendWith(MockitoExtension.class)
-class EventPublisherCompleteTest {
+class EventPublisherTest {
 
     @Mock
     private AmqpTemplate rabbitTemplate;
@@ -48,11 +50,7 @@ class EventPublisherCompleteTest {
         assertDoesNotThrow(() -> rabbitEventPublisher.publish(validEvent, routingKey));
         
         // Then - Verificar que se llamó el método con los parámetros correctos
-        verify(rabbitTemplate).convertAndSend(
-            eq(RabbitConfig.EXCHANGE), 
-            eq(routingKey), 
-            eq(validEvent)
-        );
+        verify(rabbitTemplate).convertAndSend(eq("letterboxd_exchange"), eq(routingKey), eq(validEvent));
     }
     
     @Test
@@ -85,7 +83,7 @@ class EventPublisherCompleteTest {
         
         // Then
         verify(rabbitTemplate).convertAndSend(
-            eq(RabbitConfig.EXCHANGE), 
+            eq("letterboxd_exchange"), 
             eq(routingKey), 
             eq(userEvent)
         );
@@ -121,7 +119,7 @@ class EventPublisherCompleteTest {
         
         // Then
         verify(rabbitTemplate).convertAndSend(
-            eq(RabbitConfig.EXCHANGE), 
+            eq("letterboxd_exchange"), 
             eq(routingKey), 
             eq(complexEvent)
         );
@@ -131,14 +129,14 @@ class EventPublisherCompleteTest {
     @DisplayName("Debe manejar routing keys específicos para diferentes módulos")
     void shouldHandleSpecificRoutingKeysForDifferentModules() {
         // Given
-        EventDTO userEvent = TestEventBuilder.builder().asUserEvent("created").build();
+        EventDTO userEvent = TestEventBuilder.builder().asUserCreated(123L, "test@example.com", "testuser").build();
         
         // When
         rabbitEventPublisher.publish(userEvent, RabbitConfig.ROUTING_KEY_USERS);
         
         // Then
         verify(rabbitTemplate).convertAndSend(
-            eq(RabbitConfig.EXCHANGE), 
+            eq("letterboxd_exchange"), 
             eq(RabbitConfig.ROUTING_KEY_USERS), 
             eq(userEvent)
         );
@@ -153,25 +151,25 @@ class EventPublisherCompleteTest {
         AmqpException connectionError = new AmqpException("Connection refused");
         
         doThrow(connectionError).when(rabbitTemplate)
-            .convertAndSend(eq(RabbitConfig.EXCHANGE), eq(routingKey), eq(event));
+            .convertAndSend(eq("letterboxd_exchange"), eq(routingKey), eq(event));
         
         // When & Then
         AmqpException exception = assertThrows(AmqpException.class, 
             () -> rabbitEventPublisher.publish(event, routingKey));
         
         assertEquals("Connection refused", exception.getMessage());
-        verify(rabbitTemplate).convertAndSend(eq(RabbitConfig.EXCHANGE), eq(routingKey), eq(event));
+        verify(rabbitTemplate).convertAndSend(eq("letterboxd_exchange"), eq(routingKey), eq(event));
     }
     
     @Test
-    @DisplayName("Debe verificar que se usa el exchange correcto")
+    @DisplayName("Debe verificar que EventPublisherService usa el exchange correcto")
     void shouldUseCorrectExchange() {
         // Given
         EventDTO event = EventTestDataFactory.createValidEventDTO();
         String routingKey = "test.routing";
         
         // When
-        rabbitEventPublisher.publish(event, routingKey);
+        eventPublisherService.publish(event, routingKey);
         
         // Then - Verificar que usa el exchange correcto
         verify(rabbitTemplate).convertAndSend(
@@ -185,9 +183,9 @@ class EventPublisherCompleteTest {
     @DisplayName("Debe publicar diferentes tipos de eventos correctamente")
     void shouldPublishDifferentEventTypesCorrectly() {
         // Given
-        EventDTO userEvent = EventTestDataFactory.createUserEvent("signup");
-        EventDTO movieEvent = EventTestDataFactory.createMovieEvent("created");
-        EventDTO ratingEvent = EventTestDataFactory.createRatingEvent();
+        EventDTO userEvent = EventTestDataFactory.createUserEvent("user123");
+        EventDTO movieEvent = EventTestDataFactory.createMovieEvent("movie456");
+        EventDTO ratingEvent = EventTestDataFactory.createRatingEvent("user123", "movie456", 4.5);
         
         // When
         rabbitEventPublisher.publish(userEvent, "user.signup.routing");
@@ -195,9 +193,9 @@ class EventPublisherCompleteTest {
         rabbitEventPublisher.publish(ratingEvent, "rating.created.routing");
         
         // Then
-        verify(rabbitTemplate).convertAndSend(RabbitConfig.EXCHANGE, "user.signup.routing", userEvent);
+        verify(rabbitTemplate).convertAndSend("letterboxd_exchange", "user.signup.routing", userEvent);
         verify(rabbitTemplate).convertAndSend(RabbitConfig.EXCHANGE, "movie.created.routing", movieEvent);
-        verify(rabbitTemplate).convertAndSend(RabbitConfig.EXCHANGE, "rating.created.routing", ratingEvent);
+        verify(rabbitTemplate).convertAndSend("letterboxd_exchange", "rating.created.routing", ratingEvent);
     }
     
     @Test
@@ -208,7 +206,7 @@ class EventPublisherCompleteTest {
         
         // When & Then - Empty routing key
         assertDoesNotThrow(() -> rabbitEventPublisher.publish(event, ""));
-        verify(rabbitTemplate).convertAndSend(eq(RabbitConfig.EXCHANGE), eq(""), eq(event));
+        verify(rabbitTemplate).convertAndSend(eq("letterboxd_exchange"), eq(""), eq(event));
     }
     
     @Test
@@ -230,25 +228,22 @@ class EventPublisherCompleteTest {
         
         // When & Then
         assertDoesNotThrow(() -> rabbitEventPublisher.publish(null, routingKey));
-        verify(rabbitTemplate).convertAndSend(eq(RabbitConfig.EXCHANGE), eq(routingKey), (Object) eq(null));
+        verify(rabbitTemplate).convertAndSend(eq("letterboxd_exchange"), eq(routingKey), (Object) eq(null));
     }
     
     @Test
-    @DisplayName("Ambos publishers deben usar la misma interfaz correctamente")
-    void bothPublishersShouldImplementSameInterface() {
+    @DisplayName("Ambos publishers deben manejar la publicación correctamente")
+    void bothPublishersShouldHandlePublishingCorrectly() {
         // Given
         EventDTO event = EventTestDataFactory.createValidEventDTO();
-        String routingKey = "interface.test.routing";
+        String routingKey = "comparison.test.routing";
         
-        // When - Test interface implementation
-        EventPublisherTest publisherInterface = rabbitEventPublisher;
-        publisherInterface.publish(event, routingKey);
+        // When - Test both implementations
+        rabbitEventPublisher.publish(event, routingKey);
+        eventPublisherService.publish(event, routingKey);
         
-        // Then
-        verify(rabbitTemplate).convertAndSend(
-            eq(RabbitConfig.EXCHANGE), 
-            eq(routingKey), 
-            eq(event)
-        );
+        // Then - Verify both were called with their respective signatures
+        verify(rabbitTemplate).convertAndSend(eq("letterboxd_exchange"), eq(routingKey), eq(event));
+        verify(rabbitTemplate).convertAndSend(eq(RabbitConfig.EXCHANGE), eq(routingKey), eq(event));
     }
 }

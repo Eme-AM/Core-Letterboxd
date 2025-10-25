@@ -81,7 +81,7 @@ class EventServiceTest {
     void processIncomingEvent_withNullSysDate_shouldUseCurrentTime() throws Exception {
         // Given
         EventDTO eventWithNullDate = TestEventBuilder.builder()
-            .withDate(null)
+            .withSysDate(null)
             .build();
         String routingKey = "test.routing";
         String payloadJson = "{\"test\":\"data\"}";

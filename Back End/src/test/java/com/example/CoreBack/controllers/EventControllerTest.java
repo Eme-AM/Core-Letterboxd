@@ -290,7 +290,7 @@ class EventControllerTest {
         testEventProcessing(EventTestDataFactory.createMovieEvent("updated"), "movie.updated.routing");
         
         // Test para evento de rating
-        testEventProcessing(EventTestDataFactory.createRatingEvent(), "rating.created.routing");
+        testEventProcessing(EventTestDataFactory.createRatingEvent("user123", "movie456", 4.5), "rating.created.routing");
 
         verify(eventService, times(3)).processIncomingEvent(any(EventDTO.class), anyString());
     }

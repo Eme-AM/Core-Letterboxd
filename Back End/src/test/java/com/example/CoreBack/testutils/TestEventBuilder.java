@@ -2,13 +2,21 @@ package com.example.CoreBack.testutils;
 
 import com.example.CoreBack.entity.EventDTO;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
+/**
+ * Builder pattern para crear EventDTO en tests
+ * Adaptado a la estructura limpia del core (solo campos básicos del CloudEvent)
+ */
 public class TestEventBuilder {
     private EventDTO event;
+    private Map<String, Object> dataMap;
     private boolean isInvalid = false;
     
     private TestEventBuilder() {
         this.event = new EventDTO();
+        this.dataMap = new HashMap<>();
     }
     
     public static TestEventBuilder builder() {
@@ -19,63 +27,9 @@ public class TestEventBuilder {
         return new TestEventBuilder();
     }
     
-    public TestEventBuilder withEventType(String eventType) {
-        this.event.setEventType(eventType);
-        return this;
-    }
-    
-    public TestEventBuilder withUserId(String userId) {
-        this.event.setUserId(userId);
-        return this;
-    }
-    
-    public TestEventBuilder withMovieId(String movieId) {
-        this.event.setMovieId(movieId);
-        return this;
-    }
-    
-    public TestEventBuilder withRating(Double rating) {
-        this.event.setRating(rating);
-        return this;
-    }
-    
-    public TestEventBuilder withSource(String source) {
-        this.event.setSource(source);
-        return this;
-    }
-    
-    public TestEventBuilder withEventData(String eventData) {
-        this.event.setEventData(eventData);
-        return this;
-    }
-    
-    public TestEventBuilder withDate(LocalDateTime date) {
-        this.event.setSysDate(date);
-        return this;
-    }
-    
-    public TestEventBuilder withSysDate(LocalDateTime sysDate) {
-        this.event.setSysDate(sysDate);
-        return this;
-    }
-    
-    public TestEventBuilder withDataField(String key, Object value) {
-        if (this.event.getData() == null) {
-            this.event.setData(new java.util.HashMap<>());
-        }
-        this.event.getData().put(key, value);
-        return this;
-    }
-    
-    public TestEventBuilder withType(String type) {
-        this.event.setType(type);
-        return this;
-    }
-    
-    public TestEventBuilder asUserEvent(String userId) {
-        this.event.setEventType("user_action");
-        this.event.setUserId(userId);
-        this.event.setEventData("{\"action\": \"test_action\"}");
+    // Métodos para campos básicos del CloudEvent
+    public TestEventBuilder withType(String eventType) {
+        this.event.setType(eventType);
         return this;
     }
     
@@ -84,40 +38,88 @@ public class TestEventBuilder {
         return this;
     }
     
+    public TestEventBuilder withSource(String source) {
+        this.event.setSource(source);
+        return this;
+    }
+    
+    public TestEventBuilder withDataContentType(String dataContentType) {
+        this.event.setDatacontenttype(dataContentType);
+        return this;
+    }
+    
+    public TestEventBuilder withSysDate(LocalDateTime sysDate) {
+        this.event.setSysDate(sysDate);
+        return this;
+    }
+    
+    // Métodos para datos específicos que van en el Map data
+    public TestEventBuilder withDataField(String key, Object value) {
+        this.dataMap.put(key, value);
+        return this;
+    }
+    
+    public TestEventBuilder withUserId(String userId) {
+        this.dataMap.put("userId", userId);
+        return this;
+    }
+    
+    public TestEventBuilder withMovieId(String movieId) {
+        this.dataMap.put("movieId", movieId);
+        return this;
+    }
+    
+    public TestEventBuilder withRating(Double rating) {
+        this.dataMap.put("rating", rating);
+        return this;
+    }
+    
+    public TestEventBuilder withEmail(String email) {
+        this.dataMap.put("email", email);
+        return this;
+    }
+    
+    public TestEventBuilder withUsername(String username) {
+        this.dataMap.put("username", username);
+        return this;
+    }
+    
+    // Métodos helper para crear eventos específicos
     public TestEventBuilder asUserCreated(Long userId, String email, String username) {
         this.event.setId("user-event-" + userId);
-        this.event.setEventType("user.created");
+        this.event.setType("user.created");
         this.event.setSource("/users/signup");
         this.event.setDatacontenttype("application/json");
         this.event.setSysDate(LocalDateTime.now());
-        // Store userId, email, and username in data map to match test expectations
-        if (this.event.getData() == null) {
-            this.event.setData(new java.util.HashMap<>());
-        }
-        this.event.getData().put("userId", userId); // Store as Long
-        this.event.getData().put("email", email);   // Store email
-        this.event.getData().put("username", username); // Store username
-        this.event.setEventData("{\"userId\":\"" + userId + "\",\"email\":\"" + email + "\",\"username\":\"" + username + "\"}");
+        
+        // Store data in the map
+        this.dataMap.put("userId", userId);
+        this.dataMap.put("email", email);   
+        this.dataMap.put("username", username);
+        
         return this;
     }
     
     public TestEventBuilder asInvalid() {
-        // Don't set required fields to make it invalid
-        // Clear any defaults that might have been set
-        this.event = new EventDTO(); // Reset to ensure invalidity
-        this.isInvalid = true; // Flag to skip defaults in build()
-        // Don't set any fields - leave them all null to trigger validation errors
+        this.event = new EventDTO();
+        this.dataMap.clear();
+        this.isInvalid = true;
         return this;
     }
     
     public EventDTO build() {
+        // Set the data map if it has content
+        if (!dataMap.isEmpty()) {
+            this.event.setData(new HashMap<>(dataMap));
+        }
+        
         // Set defaults if not set (only for valid events)
         if (!isInvalid) {
             if (event.getId() == null) {
                 event.setId("test-event-" + System.currentTimeMillis());
             }
-            if (event.getType() == null && event.getEventType() == null) {
-                event.setEventType("test.event");
+            if (event.getType() == null) {
+                event.setType("test.event");
             }
             if (event.getSource() == null) {
                 event.setSource("/test");
