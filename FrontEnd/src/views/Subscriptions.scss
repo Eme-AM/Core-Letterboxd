@@ -1,0 +1,118 @@
+.subscriptions-container {
+    display: flex;
+    min-height: 100vh;
+    background: linear-gradient(180deg, #0a0e1a 0%, #1a1f2e 100%);
+
+    .subscriptions-main {
+        flex: 1;
+        padding: 2rem;
+        color: white;
+        transition: margin-left 0.3s ease;
+        margin-left: 80px;
+
+        &.sidebar-open {
+            margin-left: 250px;
+        }
+
+        &.sidebar-collapsed {
+            margin-left: 80px;
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            max-width: 1400px;
+            margin: 2rem auto 0;
+
+            @media (min-width: 768px) {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .module-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+            border-radius: 12px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+
+            .module-header {
+                display: flex;
+                align-items: flex-start;
+                gap: 1rem;
+                margin-bottom: 1rem;
+                position: relative;
+
+                .module-icon {
+                    background: rgba(255, 0, 53, 1);
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.3rem;
+                    flex-shrink: 0;
+                    color: black;
+
+                    svg {
+                        width: 32px;
+                        height: 32px;
+                    }
+                }
+
+                .module-info {
+                    flex: 1;
+
+                    .module-title {
+                        font-size: 1.1rem;
+                        font-weight: 600;
+                        margin: 0 0 0.25rem 0;
+                        color: white;
+                    }
+
+                    .module-events {
+                        font-size: 0.75rem;
+                        color: rgba(148, 163, 184, 0.8);
+                        margin: 0;
+                    }
+                }
+
+                .active-badge {
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                    background: rgba(236, 72, 153, 0.2);
+                    color: #ec4899;
+                    padding: 0.25rem 0.75rem;
+                    border-radius: 20px;
+                    font-size: 0.7rem;
+                    font-weight: 600;
+                    border: 1px solid rgba(236, 72, 153, 0.3);
+                }
+            }
+
+            .module-description {
+                color: rgba(203, 213, 225, 0.9);
+                font-size: 0.9rem;
+                line-height: 1.5;
+                margin-bottom: 1.5rem;
+                min-height: 2.5rem;
+            }
+
+            .view-events-btn {
+                width: 100%;
+                background: rgba(20, 106, 113, 1);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 0.75rem 1rem;
+                font-weight: 600;
+                font-size: 0.9rem;
+                cursor: pointer;
+            }
+        }
+    }
+}
+

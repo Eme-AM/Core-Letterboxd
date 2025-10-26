@@ -59,7 +59,7 @@ function Dashboard() {
         }
       })
       .catch(err => {
-        throw new Error(`HTTP ${err.status}`);
+        console.error('Error fetching stats:', err);
       })
       .finally(() => {
         //setLoading(false);
@@ -82,7 +82,7 @@ function Dashboard() {
         }
       })
       .catch(err => {
-        new Error(`HTTP ${err.status}`);
+        console.error('Error fetching evolution data:', err);
       })
       .finally(() => {
         //setLoading(false);
@@ -102,7 +102,7 @@ function Dashboard() {
         }
       })
       .catch(err => {
-        new Error(`HTTP ${err.status}`);
+        console.error('Error fetching per-module data:', err);
       })
       .finally(() => {
         //setLoading(false);
@@ -116,7 +116,7 @@ function Dashboard() {
         }
       })
       .catch(err => {
-        //setError("No se pudieron cargar los eventos.");
+        console.error('Error fetching recent events:', err);
       })
       .finally(() => {
         //setLoading(false);

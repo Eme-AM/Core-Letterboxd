@@ -8,13 +8,14 @@ import { formatDateTime, toCapitalizeCase } from "../functions";
 function EventItem({ id, eventType, source, status, occurredAt, onView }) {
   // Selección de icono SVG y filtro de color según status
   const getStatusConfig = () => {
-    switch (status) {
+    const normalizedStatus = status?.toUpperCase();
+    switch (normalizedStatus) {
       case "DELIVERED":
         return {
           icon: <img src={deliveredSvg} alt="Delivered" className="event-status-icon" style={{ filter: 'brightness(0) saturate(100%) invert(54%) sepia(77%) saturate(505%) hue-rotate(77deg) brightness(97%) contrast(101%)' }} />,
           badgeClass: "status-delivered"
         };
-      case "InQueue":
+      case "INQUEUE":
         return {
           icon: <img src={inQueueSvg} alt="In Queue" className="event-status-icon" style={{ filter: 'brightness(0) saturate(100%) invert(81%) sepia(41%) saturate(7492%) hue-rotate(359deg) brightness(101%) contrast(101%)' }} />,
           badgeClass: "status-queue"
