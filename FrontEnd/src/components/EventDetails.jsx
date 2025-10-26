@@ -10,7 +10,6 @@ import api from "../axios";
 
 function EventDetails({ event, onClose }) {
 
-
   const [activeTab, setActiveTab] = useState("details");
   const [timeline, setTimeline] = useState("details");
 
@@ -21,31 +20,25 @@ function EventDetails({ event, onClose }) {
         .then(res => {
           res.data && setTimeline(res.data.timeline);
         })
-        /*.catch(err => {
-          //setError("No se pudieron cargar los eventos.");
-        })
-        .finally(() => {
-          //setLoading(false);
-        });*/
     }
   }, [event]);
 
   if (!event) return null;
 
-  // Selección de ícono SVG y filtro de color según status
   let statusIcon, statusIconStyle;
-  switch (event.status) {
+  const normalizedStatus = event.status?.toUpperCase();
+  switch (normalizedStatus) {
     case 'DELIVERED':
       statusIcon = deliveredSvg;
-      statusIconStyle = { filter: 'invert(56%) sepia(77%) saturate(453%) hue-rotate(90deg) brightness(92%) contrast(92%)' };
+      statusIconStyle = { filter: 'brightness(0) saturate(100%) invert(54%) sepia(77%) saturate(505%) hue-rotate(77deg) brightness(97%) contrast(101%)' };
       break;
     case 'FAILED':
       statusIcon = failedSvg;
-      statusIconStyle = { filter: 'invert(34%) sepia(99%) saturate(7492%) hue-rotate(357deg) brightness(97%) contrast(101%)' };
+      statusIconStyle = { filter: 'brightness(0) saturate(100%) invert(36%) sepia(99%) saturate(7492%) hue-rotate(340deg) brightness(97%) contrast(101%)' };
       break;
-    case 'InQueue':
+    case 'INQUEUE':
       statusIcon = inQueueSvg;
-      statusIconStyle = { filter: 'invert(24%) sepia(76%) saturate(1802%) hue-rotate(359deg) brightness(103%) contrast(105%)' };
+      statusIconStyle = { filter: 'brightness(0) saturate(100%) invert(81%) sepia(41%) saturate(7492%) hue-rotate(359deg) brightness(101%) contrast(101%)' };
 
       break;
     default:
@@ -136,10 +129,6 @@ function EventDetails({ event, onClose }) {
                 <span className="label">Type</span>
                 <span className="value">{event.eventType}</span>
               </div>
-              {/*<div className="row">
-                <span className="label">Destination</span>
-                <span className="value">{/*event.to* /}</span>
-              </div></div>*/}
               <div className="row">
                 <span className="label">Date/Time</span>
                 <span className="value">{formatDateTime(event.occurredAt)}</span>
