@@ -1,15 +1,59 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Login.scss';
 import appLogo from '../assets/App Logo.png';
 
 function Login() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Lógica de login
-        console.log('Login:', { username, password });
+        setLoading(true);
+        setError('');
+
+        try {
+            const formData = new URLSearchParams();
+            formData.append('grant_type', 'password');
+            formData.append('username', username);
+            formData.append('password', password);
+            formData.append('scope', '');
+            formData.append('client_id', '');
+            formData.append('client_secret', '');
+
+            const response = await fetch(
+                'http://users-prod-alb-1703954385.us-east-1.elb.amazonaws.com/api/v1/auth/login',
+                {
+                    method: 'POST',
+                    headers: {
+                        'accept': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData.toString(),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('Credenciales inválidas');
+            }
+
+            const data = await response.json();
+            
+            // Guardar el token en localStorage
+            localStorage.setItem('access_token', data.access_token);
+            if (data.refresh_token) {
+                localStorage.setItem('refresh_token', data.refresh_token);
+            }
+
+            navigate('/');
+        } catch (error) {
+            setError(error.message || 'Error al iniciar sesión');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -29,6 +73,7 @@ function Login() {
                             onChange={(e) => setUsername(e.target.value)}
                             className="form-input"
                             required
+                            disabled={loading}
                         />
                     </div>
 
@@ -40,14 +85,17 @@ function Login() {
                             onChange={(e) => setPassword(e.target.value)}
                             className="form-input"
                             required
+                            disabled={loading}
                         />
                     </div>
 
                     <a href="#" className="forgot-password">Olvidé mi contraseña</a>
 
-                    <button type="submit" className="login-button">
-                        INICIAR SESIÓN
+                    <button type="submit" className="login-button" disabled={loading}>
+                        {loading ? 'INICIANDO SESIÓN...' : 'INICIAR SESIÓN'}
                     </button>
+
+                    {error && <p className="error-message">{error}</p>}
                 </form>
 
                 <div className="register-section">

@@ -63,6 +63,11 @@
                         border-color: rgba(255, 0, 53, 0.6);
                         background: rgba(51, 65, 85, 0.7);
                     }
+
+                    &:disabled {
+                        opacity: 0.6;
+                        cursor: not-allowed;
+                    }
                 }
             }
 
@@ -93,15 +98,28 @@
                 margin-top: 0.5rem;
                 transition: all 0.3s ease;
 
-                &:hover {
+                &:hover:not(:disabled) {
                     background: rgba(220, 0, 45, 1);
                     transform: translateY(-2px);
                     box-shadow: 0 4px 12px rgba(255, 0, 53, 0.4);
                 }
 
-                &:active {
+                &:active:not(:disabled) {
                     transform: translateY(0);
                 }
+
+                &:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+            }
+
+            .error-message {
+                color: #ff3b3b;
+                font-size: 0.9rem;
+                text-align: center;
+                margin: 0.5rem 0 0 0;
+                font-weight: 500;
             }
         }
 
