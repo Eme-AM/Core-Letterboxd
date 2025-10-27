@@ -1,20 +1,19 @@
 package com.example.CoreBack.entity;
 
-import com.example.CoreBack.testutils.EventTestDataFactory;
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.example.CoreBack.testutils.TestData;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
-
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.*;
 
 /**
  * Tests unitarios para EventDTO
@@ -34,14 +33,13 @@ class EventDTOTest {
     @DisplayName("EventDTO válido debe pasar todas las validaciones")
     void validEventDTO_ShouldPassAllValidations() {
         // Given
-        EventDTO validEventDTO = EventTestDataFactory.createValidEventDTO();
+        EventDTO validEventDTO = TestData.Events.validEventDTO();
 
         // When
         Set<ConstraintViolation<EventDTO>> violations = validator.validate(validEventDTO);
 
         // Then
         assertThat(violations).isEmpty();
-        assertThat(validEventDTO.getId()).isNotBlank();
         assertThat(validEventDTO.getType()).isNotBlank();
         assertThat(validEventDTO.getSource()).isNotBlank();
         assertThat(validEventDTO.getDatacontenttype()).isNotBlank();
@@ -49,43 +47,13 @@ class EventDTOTest {
         assertThat(validEventDTO.getSysDate()).isNotNull();
     }
 
-    @Test
-    @DisplayName("EventDTO con ID nulo debe fallar validación")
-    void eventDTOWithNullId_ShouldFailValidation() {
-        // Given
-        EventDTO eventDTO = EventTestDataFactory.createValidEventDTO();
-        eventDTO.setId(null);
 
-        // When
-        Set<ConstraintViolation<EventDTO>> violations = validator.validate(eventDTO);
-
-        // Then
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-            .isEqualTo("El campo 'id' es obligatorio");
-    }
-
-    @Test
-    @DisplayName("EventDTO con ID vacío debe fallar validación")
-    void eventDTOWithBlankId_ShouldFailValidation() {
-        // Given
-        EventDTO eventDTO = EventTestDataFactory.createValidEventDTO();
-        eventDTO.setId("");
-
-        // When
-        Set<ConstraintViolation<EventDTO>> violations = validator.validate(eventDTO);
-
-        // Then
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-            .isEqualTo("El campo 'id' es obligatorio");
-    }
 
     @Test
     @DisplayName("EventDTO con tipo nulo debe fallar validación")
     void eventDTOWithNullType_ShouldFailValidation() {
         // Given
-        EventDTO eventDTO = EventTestDataFactory.createValidEventDTO();
+        EventDTO eventDTO = TestData.Events.validEventDTO();
         eventDTO.setType(null);
 
         // When
@@ -101,7 +69,7 @@ class EventDTOTest {
     @DisplayName("EventDTO con tipo vacío debe fallar validación")
     void eventDTOWithBlankType_ShouldFailValidation() {
         // Given
-        EventDTO eventDTO = EventTestDataFactory.createValidEventDTO();
+        EventDTO eventDTO = TestData.Events.validEventDTO();
         eventDTO.setType("   "); // Solo espacios en blanco
 
         // When
@@ -117,7 +85,7 @@ class EventDTOTest {
     @DisplayName("EventDTO con source nulo debe fallar validación")
     void eventDTOWithNullSource_ShouldFailValidation() {
         // Given
-        EventDTO eventDTO = EventTestDataFactory.createValidEventDTO();
+        EventDTO eventDTO = TestData.Events.validEventDTO();
         eventDTO.setSource(null);
 
         // When
@@ -133,7 +101,7 @@ class EventDTOTest {
     @DisplayName("EventDTO con datacontenttype nulo debe fallar validación")
     void eventDTOWithNullDataContentType_ShouldFailValidation() {
         // Given
-        EventDTO eventDTO = EventTestDataFactory.createValidEventDTO();
+        EventDTO eventDTO = TestData.Events.validEventDTO();
         eventDTO.setDatacontenttype(null);
 
         // When
@@ -149,7 +117,7 @@ class EventDTOTest {
     @DisplayName("EventDTO con data nulo debe fallar validación")
     void eventDTOWithNullData_ShouldFailValidation() {
         // Given
-        EventDTO eventDTO = EventTestDataFactory.createValidEventDTO();
+        EventDTO eventDTO = TestData.Events.validEventDTO();
         eventDTO.setData(null);
 
         // When
@@ -165,7 +133,7 @@ class EventDTOTest {
     @DisplayName("EventDTO con sysDate nulo debe ser válido (campo opcional)")
     void eventDTOWithNullSysDate_ShouldBeValid() {
         // Given
-        EventDTO eventDTO = EventTestDataFactory.createValidEventDTO();
+        EventDTO eventDTO = TestData.Events.validEventDTO();
         eventDTO.setSysDate(null);
 
         // When
@@ -186,7 +154,7 @@ class EventDTOTest {
         Set<ConstraintViolation<EventDTO>> violations = validator.validate(eventDTO);
 
         // Then
-        assertThat(violations).hasSize(5); // 5 campos obligatorios (sysDate is optional)
+        assertThat(violations).hasSize(4); // 4 campos obligatorios: type, source, datacontenttype, data (sysDate is optional)
         
         Set<String> violationMessages = Set.of(
             "El campo 'id' es obligatorio",
@@ -205,14 +173,14 @@ class EventDTOTest {
     @DisplayName("EventDTO debe permitir data con estructura compleja")
     void eventDTOWithComplexData_ShouldBeValid() {
         // Given
-        EventDTO eventDTO = EventTestDataFactory.createEventDTOWithComplexData();
+        EventDTO eventDTO = TestData.Events.complexEvent();
 
         // When
         Set<ConstraintViolation<EventDTO>> violations = validator.validate(eventDTO);
 
         // Then
         assertThat(violations).isEmpty();
-        // Verificar que tiene los campos del EventTestDataFactory
+        // Verificar que tiene los campos del TestData.Events
         assertThat(eventDTO.getData()).containsKey("movieId");
         assertThat(eventDTO.getData()).containsKey("rating");
         assertThat(eventDTO.getData()).containsKey("review");
@@ -229,7 +197,6 @@ class EventDTOTest {
         Map<String, Object> testData = Map.of("test", "value");
 
         // When
-        eventDTO.setId("test-id");
         eventDTO.setType("test.type");
         eventDTO.setSource("test-source");
         eventDTO.setDatacontenttype("application/json");
@@ -237,7 +204,6 @@ class EventDTOTest {
         eventDTO.setData(testData);
 
         // Then
-        assertThat(eventDTO.getId()).isEqualTo("test-id");
         assertThat(eventDTO.getType()).isEqualTo("test.type");
         assertThat(eventDTO.getSource()).isEqualTo("test-source");
         assertThat(eventDTO.getDatacontenttype()).isEqualTo("application/json");
@@ -251,19 +217,19 @@ class EventDTOTest {
         // Given & When & Then
         
         // Data con strings
-        EventDTO stringDataEvent = EventTestDataFactory.createUserEvent("created");
+        EventDTO stringDataEvent = TestData.Events.userEvent("created");
         assertThat(validator.validate(stringDataEvent)).isEmpty();
 
         // Data con números
-        EventDTO numericDataEvent = EventTestDataFactory.createRatingEvent("user123", "movie456", 4.5);
+        EventDTO numericDataEvent = TestData.Events.ratingEvent("user123", "movie456", 4.5);
         assertThat(validator.validate(numericDataEvent)).isEmpty();
 
         // Data con arrays
-        EventDTO arrayDataEvent = EventTestDataFactory.createEventDTOWithComplexData();
+        EventDTO arrayDataEvent = TestData.Events.complexEvent();
         assertThat(validator.validate(arrayDataEvent)).isEmpty();
 
         // Data vacía (pero no null)
-        EventDTO emptyDataEvent = EventTestDataFactory.createValidEventDTO();
+        EventDTO emptyDataEvent = TestData.Events.validEventDTO();
         emptyDataEvent.setData(Map.of());
         assertThat(validator.validate(emptyDataEvent)).isEmpty();
     }
@@ -275,7 +241,6 @@ class EventDTOTest {
         EventDTO eventDTO = new EventDTO();
 
         // Then
-        assertThat(eventDTO.getId()).isNull();
         assertThat(eventDTO.getType()).isNull();
         assertThat(eventDTO.getSource()).isNull();
         assertThat(eventDTO.getDatacontenttype()).isNull();

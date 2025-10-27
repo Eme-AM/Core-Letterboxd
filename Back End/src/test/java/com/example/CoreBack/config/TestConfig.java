@@ -6,8 +6,11 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.web.SecurityFilterChain;
 
 @TestConfiguration
+@EnableWebSecurity
 public class TestConfig {
     
     @Bean
@@ -18,7 +21,9 @@ public class TestConfig {
     
     @Bean
     @Primary
-    public HttpSecurity httpSecurity() {
-        return Mockito.mock(HttpSecurity.class);
+    public SecurityFilterChain testFilterChain(HttpSecurity http) throws Exception {
+        return http
+            .authorizeHttpRequests(authz -> authz.anyRequest().permitAll())
+            .build();
     }
 }

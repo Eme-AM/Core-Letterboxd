@@ -1,31 +1,31 @@
 package com.example.CoreBack.service;
 
-import com.example.CoreBack.config.RabbitConfig;
-import com.example.CoreBack.entity.EventDTO;
-import com.example.CoreBack.testutils.EventTestDataFactory;
-import com.example.CoreBack.testutils.TestEventBuilder;
-
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpTemplate;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
+import com.example.CoreBack.config.RabbitConfig;
+import com.example.CoreBack.entity.EventDTO;
+import com.example.CoreBack.testutils.TestData;
 
 /**
- * Tests unitarios para EventPublisher services.
+ * Tests unitarios para RabbitEventPublisher service.
  * Verifica la publicación de eventos a RabbitMQ con diferentes escenarios.
  */
 @ExtendWith(MockitoExtension.class)
-class EventPublisherTest {
+class RabbitEventPublisherTest {
 
     @Mock
     private AmqpTemplate rabbitTemplate;
@@ -43,7 +43,7 @@ class EventPublisherTest {
     @DisplayName("RabbitEventPublisher debe publicar evento válido correctamente")
     void rabbitEventPublisher_withValidEvent_shouldPublishSuccessfully() {
         // Given
-        EventDTO validEvent = EventTestDataFactory.createValidEventDTO();
+        EventDTO validEvent = TestData.Events.validEventDTO();
         String routingKey = "user.created.routing";
         
         // When
@@ -57,7 +57,7 @@ class EventPublisherTest {
     @DisplayName("EventPublisherService debe publicar evento válido correctamente")
     void eventPublisherService_withValidEvent_shouldPublishSuccessfully() {
         // Given
-        EventDTO validEvent = EventTestDataFactory.createValidEventDTO();
+        EventDTO validEvent = TestData.Events.validEventDTO();
         String routingKey = "user.created.routing";
         
         // When
@@ -75,7 +75,7 @@ class EventPublisherTest {
     @DisplayName("Debe publicar evento de usuario con routing correcto")
     void shouldPublishUserEventWithCorrectRouting() {
         // Given
-        EventDTO userEvent = EventTestDataFactory.createUserEvent("signup");
+        EventDTO userEvent = TestData.Events.userEvent("signup");
         String routingKey = "user.signup.routing";
         
         // When
@@ -93,7 +93,7 @@ class EventPublisherTest {
     @DisplayName("Debe publicar evento de película con routing correcto")
     void shouldPublishMovieEventWithCorrectRouting() {
         // Given
-        EventDTO movieEvent = EventTestDataFactory.createMovieEvent("created");
+        EventDTO movieEvent = TestData.Events.movieEvent("created");
         String routingKey = "movie.created.routing";
         
         // When
@@ -111,7 +111,7 @@ class EventPublisherTest {
     @DisplayName("Debe publicar evento de rating con datos complejos")
     void shouldPublishRatingEventWithComplexData() {
         // Given
-        EventDTO complexEvent = EventTestDataFactory.createEventDTOWithComplexData();
+        EventDTO complexEvent = TestData.Events.complexEvent();
         String routingKey = "rating.created.routing";
         
         // When
@@ -129,7 +129,7 @@ class EventPublisherTest {
     @DisplayName("Debe manejar routing keys específicos para diferentes módulos")
     void shouldHandleSpecificRoutingKeysForDifferentModules() {
         // Given
-        EventDTO userEvent = TestEventBuilder.builder().asUserCreated(123L, "test@example.com", "testuser").build();
+        EventDTO userEvent = TestData.Builder.event().asUserCreated(123L, "test@example.com", "testuser").build();
         
         // When
         rabbitEventPublisher.publish(userEvent, RabbitConfig.ROUTING_KEY_USERS);
@@ -146,7 +146,7 @@ class EventPublisherTest {
     @DisplayName("Debe manejar error de conexión RabbitMQ")
     void shouldHandleRabbitMQConnectionError() {
         // Given
-        EventDTO event = EventTestDataFactory.createValidEventDTO();
+        EventDTO event = TestData.Events.validEventDTO();
         String routingKey = "test.routing";
         AmqpException connectionError = new AmqpException("Connection refused");
         
@@ -165,7 +165,7 @@ class EventPublisherTest {
     @DisplayName("Debe verificar que EventPublisherService usa el exchange correcto")
     void shouldUseCorrectExchange() {
         // Given
-        EventDTO event = EventTestDataFactory.createValidEventDTO();
+        EventDTO event = TestData.Events.validEventDTO();
         String routingKey = "test.routing";
         
         // When
@@ -183,9 +183,9 @@ class EventPublisherTest {
     @DisplayName("Debe publicar diferentes tipos de eventos correctamente")
     void shouldPublishDifferentEventTypesCorrectly() {
         // Given
-        EventDTO userEvent = EventTestDataFactory.createUserEvent("user123");
-        EventDTO movieEvent = EventTestDataFactory.createMovieEvent("movie456");
-        EventDTO ratingEvent = EventTestDataFactory.createRatingEvent("user123", "movie456", 4.5);
+        EventDTO userEvent = TestData.Events.userEvent("user123");
+        EventDTO movieEvent = TestData.Events.movieEvent("movie456");
+        EventDTO ratingEvent = TestData.Events.ratingEvent("user123", "movie456", 4.5);
         
         // When
         rabbitEventPublisher.publish(userEvent, "user.signup.routing");
@@ -202,7 +202,7 @@ class EventPublisherTest {
     @DisplayName("Debe manejar routing keys vacíos correctamente")
     void shouldHandleEmptyRoutingKeys() {
         // Given
-        EventDTO event = EventTestDataFactory.createValidEventDTO();
+        EventDTO event = TestData.Events.validEventDTO();
         
         // When & Then - Empty routing key
         assertDoesNotThrow(() -> rabbitEventPublisher.publish(event, ""));
@@ -213,7 +213,7 @@ class EventPublisherTest {
     @DisplayName("Debe manejar routing keys null correctamente")
     void shouldHandleNullRoutingKeys() {
         // Given
-        EventDTO event = EventTestDataFactory.createValidEventDTO();
+        EventDTO event = TestData.Events.validEventDTO();
         
         // When & Then - Null routing key
         assertDoesNotThrow(() -> eventPublisherService.publish(event, null));
@@ -235,15 +235,14 @@ class EventPublisherTest {
     @DisplayName("Ambos publishers deben manejar la publicación correctamente")
     void bothPublishersShouldHandlePublishingCorrectly() {
         // Given
-        EventDTO event = EventTestDataFactory.createValidEventDTO();
+        EventDTO event = TestData.Events.validEventDTO();
         String routingKey = "comparison.test.routing";
         
         // When - Test both implementations
         rabbitEventPublisher.publish(event, routingKey);
         eventPublisherService.publish(event, routingKey);
         
-        // Then - Verify both were called with their respective signatures
-        verify(rabbitTemplate).convertAndSend(eq("letterboxd_exchange"), eq(routingKey), eq(event));
-        verify(rabbitTemplate).convertAndSend(eq(RabbitConfig.EXCHANGE), eq(routingKey), eq(event));
+        // Then - Verify both were called (both use RabbitConfig.EXCHANGE, so 2 times total)
+        verify(rabbitTemplate, times(2)).convertAndSend(eq(RabbitConfig.EXCHANGE), eq(routingKey), eq(event));
     }
 }

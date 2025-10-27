@@ -1,0 +1,120 @@
+package com.example.CoreBack.service;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import org.mockito.Mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.example.CoreBack.entity.SystemConfig;
+import com.example.CoreBack.repository.SystemConfigRepository;
+
+/**
+ * Tests unitarios para SystemConfigService.
+ * Verifica la obtención y actualización de configuración del sistema.
+ */
+@ExtendWith(MockitoExtension.class)
+class SystemConfigServiceTest {
+
+    @Mock
+    private SystemConfigRepository repository;
+    
+    private SystemConfigService systemConfigService;
+    
+    @BeforeEach
+    void setUp() throws Exception {
+        systemConfigService = new SystemConfigService();
+        // Simular @Autowired usando reflection
+        java.lang.reflect.Field repositoryField = SystemConfigService.class.getDeclaredField("repository");
+        repositoryField.setAccessible(true);
+        repositoryField.set(systemConfigService, repository);
+    }
+    
+    @Test
+    @DisplayName("getConfig debe retornar configuración existente")
+    void getConfig_withExistingConfig_shouldReturnConfig() {
+        // Given
+        SystemConfig existingConfig = createSystemConfig(1L, 5, 1000, 100, "admin@example.com");
+        when(repository.findById(1L)).thenReturn(Optional.of(existingConfig));
+        
+        // When
+        SystemConfig result = systemConfigService.getConfig();
+        
+        // Then
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+        assertEquals(5, result.getErrorThreshold());
+        assertEquals(1000, result.getLatencyThreshold());
+        assertEquals(100, result.getQueueThreshold());
+        assertEquals("admin@example.com", result.getNotificationEmail());
+        
+        verify(repository).findById(1L);
+    }
+    
+    @Test
+    @DisplayName("getConfig debe crear configuración por defecto si no existe")
+    void getConfig_withoutExistingConfig_shouldCreateDefault() {
+        // Given
+        SystemConfig newConfig = createSystemConfig(null, 0, 0, 0, null);
+        SystemConfig savedConfig = createSystemConfig(1L, 0, 0, 0, null);
+        
+        when(repository.findById(1L)).thenReturn(Optional.empty());
+        when(repository.save(any(SystemConfig.class))).thenReturn(savedConfig);
+        
+        // When
+        SystemConfig result = systemConfigService.getConfig();
+        
+        // Then
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+        
+        verify(repository).findById(1L);
+        verify(repository).save(any(SystemConfig.class));
+    }
+    
+    @Test
+    @DisplayName("update debe actualizar configuración correctamente")
+    void update_shouldUpdateConfigSuccessfully() {
+        // Given
+        SystemConfig updateConfig = createSystemConfig(null, 10, 2000, 200, "new-admin@example.com");
+        SystemConfig savedConfig = createSystemConfig(1L, 10, 2000, 200, "new-admin@example.com");
+        
+        when(repository.save(any(SystemConfig.class))).thenReturn(savedConfig);
+        
+        // When
+        SystemConfig result = systemConfigService.update(updateConfig);
+        
+        // Then
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+        assertEquals(10, result.getErrorThreshold());
+        assertEquals(2000, result.getLatencyThreshold());
+        assertEquals(200, result.getQueueThreshold());
+        assertEquals("new-admin@example.com", result.getNotificationEmail());
+        
+        // Verificar que se estableció el ID correcto antes de guardar
+        assertEquals(1L, updateConfig.getId());
+        verify(repository).save(updateConfig);
+    }
+    
+    // Método auxiliar para crear objetos de prueba
+    private SystemConfig createSystemConfig(Long id, int errorThreshold, int latencyThreshold, 
+                                          int queueThreshold, String notificationEmail) {
+        SystemConfig config = new SystemConfig();
+        config.setId(id);
+        config.setErrorThreshold(errorThreshold);
+        config.setLatencyThreshold(latencyThreshold);
+        config.setQueueThreshold(queueThreshold);
+        config.setNotificationEmail(notificationEmail);
+        return config;
+    }
+}

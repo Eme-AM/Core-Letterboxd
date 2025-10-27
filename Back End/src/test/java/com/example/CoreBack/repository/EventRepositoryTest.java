@@ -1,20 +1,19 @@
 package com.example.CoreBack.repository;
 
-import com.example.CoreBack.entity.StoredEvent;
-import com.example.CoreBack.testutils.EventTestDataFactory;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.*;
+import com.example.CoreBack.entity.StoredEvent;
+import com.example.CoreBack.testutils.TestData;
 
 /**
  * Tests de integración para EventRepository
@@ -39,7 +38,7 @@ class EventRepositoryTest {
     @DisplayName("save() debe persistir StoredEvent correctamente")
     void save_ShouldPersistStoredEventCorrectly() {
         // Given
-        StoredEvent storedEvent = EventTestDataFactory.createStoredEvent(
+        StoredEvent storedEvent = TestData.Events.storedEvent(
             "test-event-123", "user.created"
         );
 
@@ -62,9 +61,9 @@ class EventRepositoryTest {
     @DisplayName("findAll() debe retornar todos los eventos")
     void findAll_ShouldReturnAllEvents() {
         // Given
-        StoredEvent event1 = EventTestDataFactory.createStoredEvent("event-1", "user.created");
-        StoredEvent event2 = EventTestDataFactory.createStoredEvent("event-2", "movie.updated");
-        StoredEvent event3 = EventTestDataFactory.createStoredEvent("event-3", "rating.created");
+        StoredEvent event1 = TestData.Events.storedEvent("event-1", "user.created");
+        StoredEvent event2 = TestData.Events.storedEvent("event-2", "movie.updated");
+        StoredEvent event3 = TestData.Events.storedEvent("event-3", "rating.created");
         
         eventRepository.save(event1);
         eventRepository.save(event2);
@@ -85,7 +84,7 @@ class EventRepositoryTest {
     @DisplayName("findById() debe retornar evento específico")
     void findById_ShouldReturnSpecificEvent() {
         // Given
-        StoredEvent storedEvent = EventTestDataFactory.createStoredEvent(
+        StoredEvent storedEvent = TestData.Events.storedEvent(
             "specific-event", "user.login"
         );
         StoredEvent savedEvent = eventRepository.save(storedEvent);
@@ -113,7 +112,7 @@ class EventRepositoryTest {
     @DisplayName("delete() debe eliminar evento correctamente")
     void delete_ShouldRemoveEventCorrectly() {
         // Given
-        StoredEvent storedEvent = EventTestDataFactory.createStoredEvent(
+        StoredEvent storedEvent = TestData.Events.storedEvent(
             "event-to-delete", "user.deleted"
         );
         StoredEvent savedEvent = eventRepository.save(storedEvent);
@@ -136,8 +135,8 @@ class EventRepositoryTest {
         // Given
         assertThat(eventRepository.count()).isZero(); // Database limpia
 
-        StoredEvent event1 = EventTestDataFactory.createStoredEvent("count-1", "user.created");
-        StoredEvent event2 = EventTestDataFactory.createStoredEvent("count-2", "user.updated");
+        StoredEvent event1 = TestData.Events.storedEvent("count-1", "user.created");
+        StoredEvent event2 = TestData.Events.storedEvent("count-2", "user.updated");
         
         eventRepository.save(event1);
         eventRepository.save(event2);
@@ -153,7 +152,7 @@ class EventRepositoryTest {
     @DisplayName("existsById() debe verificar existencia correctamente")
     void existsById_ShouldVerifyExistenceCorrectly() {
         // Given
-        StoredEvent storedEvent = EventTestDataFactory.createStoredEvent(
+        StoredEvent storedEvent = TestData.Events.storedEvent(
             "exists-check", "user.verified"
         );
         StoredEvent savedEvent = eventRepository.save(storedEvent);
@@ -175,9 +174,10 @@ class EventRepositoryTest {
         largePayload.append("]}");
 
         StoredEvent eventWithLargePayload = new StoredEvent(
-            "large-payload-event", "data.bulk.import", "import-service",
+            "data.bulk.import", "import-service",
             "application/json", largePayload.toString(), LocalDateTime.now()
         );
+        eventWithLargePayload.setEventId("large-payload-event");
 
         // When
         StoredEvent savedEvent = eventRepository.save(eventWithLargePayload);
@@ -198,9 +198,10 @@ class EventRepositoryTest {
         LocalDateTime preciseDateTime = LocalDateTime.of(2024, 4, 10, 16, 45, 23, 987654000);
         
         StoredEvent eventWithPreciseDate = new StoredEvent(
-            "precise-date-event", "time.precision.test", "test-service",
+            "time.precision.test", "test-service",
             "application/json", "{\"timestamp\":\"test\"}", preciseDateTime
         );
+        eventWithPreciseDate.setEventId("precise-date-event");
 
         // When
         StoredEvent savedEvent = eventRepository.save(eventWithPreciseDate);
@@ -226,9 +227,10 @@ class EventRepositoryTest {
             """;
 
         StoredEvent eventWithSpecialChars = new StoredEvent(
-            "special-chars-event", "movie.created", "movies-service",
+            "movie.created", "movies-service",
             "application/json", specialCharsPayload, LocalDateTime.now()
         );
+        eventWithSpecialChars.setEventId("special-chars-event");
 
         // When
         StoredEvent savedEvent = eventRepository.save(eventWithSpecialChars);
@@ -245,8 +247,8 @@ class EventRepositoryTest {
     @DisplayName("Transacciones deben funcionar correctamente")
     void repository_ShouldHandleTransactionsCorrectly() {
         // Given
-        StoredEvent event1 = EventTestDataFactory.createStoredEvent("tx-event-1", "user.created");
-        StoredEvent event2 = EventTestDataFactory.createStoredEvent("tx-event-2", "user.updated");
+        StoredEvent event1 = TestData.Events.storedEvent("tx-event-1", "user.created");
+        StoredEvent event2 = TestData.Events.storedEvent("tx-event-2", "user.updated");
 
         // When - Save multiple events in same transaction
         eventRepository.save(event1);

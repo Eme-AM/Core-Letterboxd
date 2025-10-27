@@ -1,13 +1,12 @@
 package com.example.CoreBack.entity;
 
-import com.example.CoreBack.testutils.EventTestDataFactory;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
-
 import java.time.LocalDateTime;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.example.CoreBack.testutils.TestData;
 
 /**
  * Tests unitarios para StoredEvent
@@ -32,7 +31,8 @@ class StoredEventTest {
         LocalDateTime occurredAt = LocalDateTime.of(2024, 1, 15, 10, 30, 0);
 
         // When
-        StoredEvent storedEvent = new StoredEvent(eventId, eventType, source, contentType, payload, occurredAt);
+        StoredEvent storedEvent = new StoredEvent(eventType, source, contentType, payload, occurredAt);
+        storedEvent.setEventId(eventId); // Asignar eventId por separado
 
         // Then
         assertThat(storedEvent.getEventId()).isEqualTo(eventId);
@@ -107,9 +107,10 @@ class StoredEventTest {
 
         // When
         StoredEvent storedEvent = new StoredEvent(
-            "complex-event-123", "user.profile.updated", "user-service", 
+            "user.profile.updated", "user-service", 
             "application/json", complexPayload, LocalDateTime.now()
         );
+        storedEvent.setEventId("complex-event-123");
 
         // Then
         assertThat(storedEvent.getPayload()).isEqualTo(complexPayload);
@@ -125,19 +126,19 @@ class StoredEventTest {
         // Given & When & Then
         
         // Evento de usuario
-        StoredEvent userEvent = EventTestDataFactory.createStoredEvent("user-1", "user.created");
+        StoredEvent userEvent = TestData.Events.storedEvent("user-1", "user.created");
         assertThat(userEvent.getEventType()).isEqualTo("user.created");
 
         // Evento de película
-        StoredEvent movieEvent = EventTestDataFactory.createStoredEvent("movie-1", "movie.created");
+        StoredEvent movieEvent = TestData.Events.storedEvent("movie-1", "movie.created");
         assertThat(movieEvent.getEventType()).isEqualTo("movie.created");
 
         // Evento de rating
-        StoredEvent ratingEvent = EventTestDataFactory.createStoredEvent("rating-1", "rating.created");
+        StoredEvent ratingEvent = TestData.Events.storedEvent("rating-1", "rating.created");
         assertThat(ratingEvent.getEventType()).isEqualTo("rating.created");
 
         // Evento social
-        StoredEvent socialEvent = EventTestDataFactory.createStoredEvent("social-1", "social.follow");
+        StoredEvent socialEvent = TestData.Events.storedEvent("social-1", "social.follow");
         assertThat(socialEvent.getEventType()).isEqualTo("social.follow");
     }
 
@@ -145,7 +146,7 @@ class StoredEventTest {
     @DisplayName("Debe manejar valores nulos sin errores")
     void storedEvent_ShouldHandleNullValuesWithoutErrors() {
         // Given & When
-        StoredEvent storedEvent = new StoredEvent(null, null, null, null, null, null);
+        StoredEvent storedEvent = new StoredEvent(null, null, null, null, null);
 
         // Then
         assertThat(storedEvent.getEventId()).isNull();
@@ -163,7 +164,8 @@ class StoredEventTest {
         LocalDateTime testDate = LocalDateTime.now();
 
         // When
-        StoredEvent storedEvent = new StoredEvent("", "", "", "", "", testDate);
+        StoredEvent storedEvent = new StoredEvent("", "", "", "", testDate);
+        storedEvent.setEventId(""); // Asignar eventId por separado
 
         // Then
         assertThat(storedEvent.getEventId()).isEmpty();
@@ -184,20 +186,23 @@ class StoredEventTest {
         
         // JSON
         StoredEvent jsonEvent = new StoredEvent(
-            "json-1", "test.event", "test-service", "application/json", "{}", testDate
+            "test.event", "test-service", "application/json", "{}", testDate
         );
+        jsonEvent.setEventId("json-1");
         assertThat(jsonEvent.getContentType()).isEqualTo("application/json");
 
         // XML
         StoredEvent xmlEvent = new StoredEvent(
-            "xml-1", "test.event", "test-service", "application/xml", "<data/>", testDate
+            "test.event", "test-service", "application/xml", "<data/>", testDate
         );
+        xmlEvent.setEventId("xml-1");
         assertThat(xmlEvent.getContentType()).isEqualTo("application/xml");
 
         // Plain Text
         StoredEvent textEvent = new StoredEvent(
-            "text-1", "test.event", "test-service", "text/plain", "plain text data", testDate
+            "test.event", "test-service", "text/plain", "plain text data", testDate
         );
+        textEvent.setEventId("text-1");
         assertThat(textEvent.getContentType()).isEqualTo("text/plain");
     }
 
@@ -209,9 +214,10 @@ class StoredEventTest {
 
         // When
         StoredEvent storedEvent = new StoredEvent(
-            "precise-event", "test.event", "test-service", 
+            "test.event", "test-service", 
             "application/json", "{}", preciseDate
         );
+        storedEvent.setEventId("precise-event");
 
         // Then
         assertThat(storedEvent.getOccurredAt()).isEqualTo(preciseDate);
@@ -226,18 +232,21 @@ class StoredEventTest {
         
         // When & Then
         StoredEvent userServiceEvent = new StoredEvent(
-            "event-1", "user.created", "user-service", "application/json", "{}", testDate
+            "user.created", "user-service", "application/json", "{}", testDate
         );
+        userServiceEvent.setEventId("event-1");
         assertThat(userServiceEvent.getSource()).isEqualTo("user-service");
 
         StoredEvent movieServiceEvent = new StoredEvent(
-            "event-2", "movie.created", "movie-service", "application/json", "{}", testDate
+            "movie.created", "movie-service", "application/json", "{}", testDate
         );
+        movieServiceEvent.setEventId("event-2");
         assertThat(movieServiceEvent.getSource()).isEqualTo("movie-service");
 
         StoredEvent externalApiEvent = new StoredEvent(
-            "event-3", "data.imported", "external-api", "application/json", "{}", testDate
+            "data.imported", "external-api", "application/json", "{}", testDate
         );
+        externalApiEvent.setEventId("event-3");
         assertThat(externalApiEvent.getSource()).isEqualTo("external-api");
     }
 }

@@ -11,8 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import com.example.CoreBack.entity.EventDTO;
 import com.example.CoreBack.entity.StoredEvent;
-import com.example.CoreBack.testutils.EventTestDataFactory;
-import com.example.CoreBack.testutils.TestEventBuilder;
+import com.example.CoreBack.testutils.TestData;
 
 /**
  * Tests unitarios para las utilidades de testing.
@@ -25,11 +24,11 @@ class TestUtilitiesTest {
     @Test
     void eventTestDataFactory_shouldCreateValidEventDTO() {
         // When
-        EventDTO event = EventTestDataFactory.createValidEventDTO();
+        EventDTO event = TestData.Events.validEventDTO();
         
         // Then
         assertNotNull(event);
-        assertNotNull(event.getId());
+        // EventDTO no tiene getId en producción
         assertNotNull(event.getType());
         assertNotNull(event.getSource());
         assertNotNull(event.getDatacontenttype());
@@ -46,7 +45,7 @@ class TestUtilitiesTest {
         String username = "testuser";
         
         // When
-        EventDTO event = EventTestDataFactory.createUserCreatedEvent(userId, email, username);
+        EventDTO event = TestData.Events.createUserCreatedEvent(userId, email, username);
         
         // Then
         assertNotNull(event);
@@ -60,11 +59,11 @@ class TestUtilitiesTest {
     @Test
     void eventTestDataFactory_shouldCreateInvalidEventDTO() {
         // When
-        EventDTO event = EventTestDataFactory.createInvalidEventDTO();
+        EventDTO event = TestData.Events.invalidEvent();
         
         // Then
         assertNotNull(event);
-        assertNull(event.getId());
+        // EventDTO no tiene getId en producción
         assertNull(event.getType());
         assertNull(event.getSysDate());
         assertNull(event.getData());
@@ -77,7 +76,7 @@ class TestUtilitiesTest {
         LocalDateTime customTime = LocalDateTime.of(2024, 1, 1, 12, 0);
         
         // When
-        EventDTO event = TestEventBuilder.anEvent()
+        EventDTO event = TestData.Builder.anEvent()
             .withId(customId)
             .withType("custom.event")
             .withSource("/custom/endpoint")
@@ -88,7 +87,7 @@ class TestUtilitiesTest {
         
         // Then
         assertNotNull(event);
-        assertEquals(customId, event.getId());
+        // EventDTO no tiene getId en producción
         assertEquals("custom.event", event.getType());
         assertEquals("/custom/endpoint", event.getSource());
         assertEquals(customTime, event.getSysDate());
@@ -104,7 +103,7 @@ class TestUtilitiesTest {
         String username = "builderuser";
         
         // When
-        EventDTO event = TestEventBuilder.anEvent()
+        EventDTO event = TestData.Builder.anEvent()
             .asUserCreated(userId, email, username)
             .build();
         
@@ -120,13 +119,13 @@ class TestUtilitiesTest {
     @Test
     void testEventBuilder_shouldCreateInvalidEvent() {
         // When
-        EventDTO event = TestEventBuilder.anEvent()
+        EventDTO event = TestData.Builder.anEvent()
             .asInvalid()
             .build();
         
         // Then
         assertNotNull(event);
-        assertNull(event.getId());
+        // EventDTO no tiene getId en producción
         assertNull(event.getType());
         assertNull(event.getSysDate());
         assertNull(event.getData());
@@ -135,7 +134,7 @@ class TestUtilitiesTest {
     @Test
     void storedEventTestDataFactory_shouldCreateValidStoredEvent() {
         // When
-        StoredEvent event = StoredEventTestDataFactory.createValidStoredEvent();
+        StoredEvent event = TestData.Events.validStoredEvent();
         
         // Then
         assertNotNull(event);
@@ -155,7 +154,7 @@ class TestUtilitiesTest {
         String username = "storeduser";
         
         // When
-        StoredEvent event = StoredEventTestDataFactory.createUserCreatedStoredEvent(userId, email, username);
+        StoredEvent event = TestData.Events.userCreatedStored(userId, email, username);
         
         // Then
         assertNotNull(event);
@@ -172,7 +171,7 @@ class TestUtilitiesTest {
         int count = 3;
         
         // When
-        StoredEvent[] events = StoredEventTestDataFactory.createMultipleStoredEvents(count);
+        StoredEvent[] events = TestData.Events.multipleStoredEvents(count);
         
         // Then
         assertNotNull(events);
