@@ -288,11 +288,13 @@ class EventServiceTest {
         
         // Then
         assertNotNull(result);
+        assertEquals(6, result.size());
         assertTrue(result.containsKey("usuarios"));
         assertTrue(result.containsKey("peliculas"));
         assertTrue(result.containsKey("reviews"));
         assertTrue(result.containsKey("social"));
         assertTrue(result.containsKey("discovery"));
+        assertTrue(result.containsKey("otros"));
         
         // Verificar que no hay módulos null/vacíos
         assertFalse(result.containsKey(null));
@@ -372,8 +374,8 @@ class EventServiceTest {
     }
 
     @Test
-    @DisplayName("getEventsPerModule debe manejar fuentes desconocidas")
-    void getEventsPerModule_withUnknownSources_shouldFilterOut() {
+    @DisplayName("getEventsPerModule debe manejar fuentes desconocidas en categoria otros")
+    void getEventsPerModule_withUnknownSources_shouldGroupInOtros() {
         // Given
         List<StoredEvent> mockEvents = List.of(
             createStoredEvent("unknown.event", "unknown-service", "Delivered"),
@@ -389,12 +391,21 @@ class EventServiceTest {
         // Then
         assertNotNull(result);
         // Verificar que todos los módulos están presentes (incluso con 0)
-        assertEquals(5, result.size());
+        assertEquals(6, result.size());
         assertTrue(result.containsKey("usuarios"));
         assertTrue(result.containsKey("social"));
         assertTrue(result.containsKey("reviews"));
         assertTrue(result.containsKey("peliculas"));
         assertTrue(result.containsKey("discovery"));
+        assertTrue(result.containsKey("otros"));
+        
+        // Verificar que fuentes desconocidas se agrupan en "otros"
+        assertEquals(1L, result.get("usuarios")); // user-service
+        assertEquals(2L, result.get("otros")); // unknown-service + random-api
+        assertEquals(0L, result.get("social"));
+        assertEquals(0L, result.get("reviews"));
+        assertEquals(0L, result.get("peliculas"));
+        assertEquals(0L, result.get("discovery"));
         
         verify(eventRepository).findAll();
     }
