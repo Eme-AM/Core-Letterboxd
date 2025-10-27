@@ -195,19 +195,21 @@ public class EventService {
         // Lista de módulos conocidos
         List<String> modules = List.of("usuarios", "social", "reviews", "peliculas", "discovery");
     
-        // Conteo real
+        // Conteo real - filtrar fuentes desconocidas antes del groupingBy
         Map<String, Long> counts = eventRepository.findAll().stream()
                 .filter(e -> e.getSource() != null)
+                .map(e -> {
+                    String source = e.getSource().toLowerCase();
+                    if (source.contains("user") || source.contains("usuario")) return "usuarios";
+                    if (source.contains("social")) return "social";
+                    if (source.contains("review")) return "reviews";
+                    if (source.contains("movie") || source.contains("pelicula")) return "peliculas";
+                    if (source.contains("discovery")) return "discovery";
+                    return null; // Para fuentes desconocidas
+                })
+                .filter(module -> module != null) // Filtrar valores null antes del groupingBy
                 .collect(Collectors.groupingBy(
-                        e -> {
-                            String source = e.getSource().toLowerCase();
-                            if (source.contains("user") || source.contains("usuario")) return "usuarios";
-                            if (source.contains("social")) return "social";
-                            if (source.contains("review")) return "reviews";
-                            if (source.contains("movie") || source.contains("pelicula")) return "peliculas";
-                            if (source.contains("discovery")) return "discovery";
-                            return null;
-                        },
+                        module -> module,
                         Collectors.counting()
                 ));
     

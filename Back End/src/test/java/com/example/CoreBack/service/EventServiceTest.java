@@ -300,6 +300,105 @@ class EventServiceTest {
         verify(eventRepository).findAll();
     }
 
+    @Test
+    @DisplayName("processIncomingEvent debe usar fecha actual cuando sysDate es muy futura")
+    void processIncomingEvent_withFutureSysDate_shouldUseCurrentTime() throws Exception {
+        // Given
+        LocalDateTime futureDate = LocalDateTime.now().plusHours(1); // Más de 5 minutos en el futuro
+        EventDTO eventWithFutureDate = TestData.Builder.anEvent()
+            .withSysDate(futureDate)
+            .build();
+        String routingKey = "test.routing";
+        
+        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
+        
+        LocalDateTime beforeTest = LocalDateTime.now().minusSeconds(1);
+        
+        // When
+        StoredEvent result = eventService.processIncomingEvent(eventWithFutureDate, routingKey);
+        
+        LocalDateTime afterTest = LocalDateTime.now().plusSeconds(1);
+        
+        // Then
+        assertNotNull(result.getOccurredAt());
+        assertTrue(result.getOccurredAt().isAfter(beforeTest));
+        assertTrue(result.getOccurredAt().isBefore(afterTest));
+        verify(publisherService).publish(eventWithFutureDate, routingKey);
+    }
+
+    @Test
+    @DisplayName("processIncomingEvent debe usar fecha actual cuando sysDate es muy antigua")
+    void processIncomingEvent_withOldSysDate_shouldUseCurrentTime() throws Exception {
+        // Given
+        LocalDateTime oldDate = LocalDateTime.now().minusDays(2); // Más de 1 día en el pasado
+        EventDTO eventWithOldDate = TestData.Builder.anEvent()
+            .withSysDate(oldDate)
+            .build();
+        String routingKey = "test.routing";
+        
+        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
+        
+        LocalDateTime beforeTest = LocalDateTime.now().minusSeconds(1);
+        
+        // When
+        StoredEvent result = eventService.processIncomingEvent(eventWithOldDate, routingKey);
+        
+        LocalDateTime afterTest = LocalDateTime.now().plusSeconds(1);
+        
+        // Then
+        assertNotNull(result.getOccurredAt());
+        assertTrue(result.getOccurredAt().isAfter(beforeTest));
+        assertTrue(result.getOccurredAt().isBefore(afterTest));
+        verify(publisherService).publish(eventWithOldDate, routingKey);
+    }
+
+    @Test
+    @DisplayName("getAllEvents debe manejar parámetros vacíos correctamente")
+    void getAllEvents_withBlankParameters_shouldIgnoreFilters() {
+        // Given
+        List<StoredEvent> mockEvents = List.of(createStoredEvent("test", "test", "Delivered"));
+        Page<StoredEvent> mockPage = new PageImpl<>(mockEvents, Pageable.ofSize(10), 1);
+        
+        when(eventRepository.findAll(ArgumentMatchers.<Specification<StoredEvent>>any(), any(Pageable.class)))
+            .thenReturn(mockPage);
+        
+        // When - probando con strings vacíos
+        Map<String, Object> result = eventService.getAllEvents(0, 10, "", "", "");
+        
+        // Then
+        assertNotNull(result);
+        assertEquals(1L, result.get("total"));
+        verify(eventRepository).findAll(ArgumentMatchers.<Specification<StoredEvent>>any(), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("getEventsPerModule debe manejar fuentes desconocidas")
+    void getEventsPerModule_withUnknownSources_shouldFilterOut() {
+        // Given
+        List<StoredEvent> mockEvents = List.of(
+            createStoredEvent("unknown.event", "unknown-service", "Delivered"),
+            createStoredEvent("user.created", "user-service", "Delivered"), // Should match "usuarios"
+            createStoredEvent("random.event", "random-api", "Failed")
+        );
+        
+        when(eventRepository.findAll()).thenReturn(mockEvents);
+        
+        // When
+        Map<String, Long> result = eventService.getEventsPerModule();
+        
+        // Then
+        assertNotNull(result);
+        // Verificar que todos los módulos están presentes (incluso con 0)
+        assertEquals(5, result.size());
+        assertTrue(result.containsKey("usuarios"));
+        assertTrue(result.containsKey("social"));
+        assertTrue(result.containsKey("reviews"));
+        assertTrue(result.containsKey("peliculas"));
+        assertTrue(result.containsKey("discovery"));
+        
+        verify(eventRepository).findAll();
+    }
+
     // Métodos auxiliares para crear objetos de prueba
     private StoredEvent createStoredEvent(String type, String source, String status) {
         return createStoredEventWithDate(type, source, status, LocalDateTime.now());
