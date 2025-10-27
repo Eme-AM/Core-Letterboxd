@@ -242,7 +242,8 @@ class RabbitEventPublisherTest {
         rabbitEventPublisher.publish(event, routingKey);
         eventPublisherService.publish(event, routingKey);
         
-        // Then - Verify both were called (both use RabbitConfig.EXCHANGE, so 2 times total)
-        verify(rabbitTemplate, times(2)).convertAndSend(eq(RabbitConfig.EXCHANGE), eq(routingKey), eq(event));
+        // Then - Verify each publisher was called with its respective exchange value
+        verify(rabbitTemplate).convertAndSend(eq("letterboxd_exchange"), eq(routingKey), eq(event));
+        verify(rabbitTemplate).convertAndSend(eq(RabbitConfig.EXCHANGE), eq(routingKey), eq(event));
     }
 }
