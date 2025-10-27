@@ -46,15 +46,15 @@ class ConsumerControllerTest {
         // Then
         assertTrue(constructors.length > 0, "ConsumerController debe tener al menos un constructor");
         
-        // Verificar que tiene un constructor público (el constructor por defecto está bien)
-        boolean hasValidConstructor = false;
+        // Verificar que tiene al menos un constructor público
+        boolean hasPublicConstructor = false;
         for (var constructor : constructors) {
-            if (constructor.getParameterCount() == 0) { // Constructor por defecto  
-                hasValidConstructor = true;
+            if (java.lang.reflect.Modifier.isPublic(constructor.getModifiers())) {
+                hasPublicConstructor = true;
                 break;
             }
         }
-        assertTrue(hasValidConstructor, "ConsumerController debe tener constructor público");
+        assertTrue(hasPublicConstructor, "ConsumerController debe tener constructor público");
     }
 
     @Test

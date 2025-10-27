@@ -1,4 +1,4 @@
-package com.example.CoreBack.util.test;
+package com.example.CoreBack.testutils;
 
 import java.time.LocalDateTime;
 
@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 
 import com.example.CoreBack.entity.EventDTO;
 import com.example.CoreBack.entity.StoredEvent;
-import com.example.CoreBack.testutils.TestData;
 
 /**
  * Tests unitarios para las utilidades de testing.
@@ -19,7 +18,7 @@ import com.example.CoreBack.testutils.TestData;
  * Verifica que EventTestDataFactory, TestEventBuilder y StoredEventTestDataFactory
  * generen datos válidos para usar en tests.
  */
-class TestUtilitiesTest {
+class TestDataTest {
 
     @Test
     void eventTestDataFactory_shouldCreateValidEventDTO() {
