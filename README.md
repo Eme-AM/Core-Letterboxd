@@ -254,4 +254,11 @@ src/main/java/com/uade/tpo/demo/
 
 ---
 
+## 🌐 Infraestructura como Código
+
+El repositorio con los scripts de Terraform para desplegar Letterboxd Core está disponible en:
+
+🔗 [Terraform-core-letterboxd](https://github.com/joaquinoto/Terraform-core-letterboxd)
+
+
 **Letterboxd Core está listo para coordinar tu plataforma de películas social!**
