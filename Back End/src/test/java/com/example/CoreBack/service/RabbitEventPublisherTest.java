@@ -126,18 +126,18 @@ class RabbitEventPublisherTest {
     }
     
     @Test
-    @DisplayName("Debe manejar routing keys específicos para diferentes módulos")
+    @DisplayName("Should handle specific routing keys for different modules")
     void shouldHandleSpecificRoutingKeysForDifferentModules() {
         // Given
         EventDTO userEvent = TestData.Builder.event().asUserCreated(123L, "test@example.com", "testuser").build();
         
         // When
-        rabbitEventPublisher.publish(userEvent, RabbitConfig.ROUTING_KEY_USERS);
+        rabbitEventPublisher.publish(userEvent, RabbitConfig.RK_USER);
         
         // Then
         verify(rabbitTemplate).convertAndSend(
             eq("letterboxd_exchange"), 
-            eq(RabbitConfig.ROUTING_KEY_USERS), 
+            eq(RabbitConfig.RK_USER), 
             eq(userEvent)
         );
     }
