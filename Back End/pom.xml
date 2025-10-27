@@ -162,13 +162,7 @@
 						<exclude>**/CoreBackApplication.class</exclude>
 						<exclude>**/config/**</exclude>
 						<exclude>**/dto/**</exclude>
-					</excludes>
-					
-					<!-- Exclude problematic test files temporarily -->
-					<excludes>
 						<exclude>**/EventConsumerServiceTest.class</exclude>
-						<exclude>**/EventTestDataFactory.class</exclude>
-						<exclude>**/TestEventBuilder.class</exclude>
 					</excludes>
 				</configuration>
 			</plugin>
