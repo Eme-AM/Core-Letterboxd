@@ -191,10 +191,10 @@ public class EventService {
     }
 
     public Map<String, Long> getEventsPerModule() {
-        // Lista de módulos conocidos
-        List<String> modules = List.of("usuarios", "social", "reviews", "peliculas", "discovery");
+        // Lista de módulos conocidos (incluye "otros" para fuentes desconocidas)
+        List<String> modules = List.of("usuarios", "social", "reviews", "peliculas", "discovery", "otros");
     
-        // Conteo real - filtrar fuentes desconocidas antes del groupingBy
+        // Conteo real - mapear fuentes desconocidas a "otros"
         Map<String, Long> counts = eventRepository.findAll().stream()
                 .filter(e -> e.getSource() != null)
                 .collect(Collectors.groupingBy(
@@ -205,12 +205,12 @@ public class EventService {
                             if (source.contains("review")) return "reviews";
                             if (source.contains("movie") || source.contains("pelicula")) return "peliculas";
                             if (source.contains("discovery")) return "discovery";
-                            return "otros"; // 👈 reemplaza null por "otros"
+                            return "otros"; // Para fuentes desconocidas
                         },
                         Collectors.counting()
                 ));
     
-        // Inicializar módulos conocidos con 0
+        // Inicializar todos los módulos con 0 (incluye "otros")
         Map<String, Long> result = new LinkedHashMap<>();
         for (String module : modules) {
             result.put(module, counts.getOrDefault(module, 0L));
