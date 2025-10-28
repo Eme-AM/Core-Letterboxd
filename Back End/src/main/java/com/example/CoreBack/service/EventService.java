@@ -16,7 +16,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -188,10 +191,10 @@ public class EventService {
     }
 
     public Map<String, Long> getEventsPerModule() {
-        // Lista de módulos conocidos
-        List<String> modules = List.of("usuarios", "social", "reviews", "peliculas", "discovery");
+        // Lista de módulos conocidos (incluye "otros" para fuentes desconocidas)
+        List<String> modules = List.of("usuarios", "social", "reviews", "peliculas", "discovery", "otros");
     
-        // Conteo real
+        // Conteo real - mapear fuentes desconocidas a "otros"
         Map<String, Long> counts = eventRepository.findAll().stream()
                 .filter(e -> e.getSource() != null)
                 .collect(Collectors.groupingBy(
@@ -202,12 +205,12 @@ public class EventService {
                             if (source.contains("review")) return "reviews";
                             if (source.contains("movie") || source.contains("pelicula")) return "peliculas";
                             if (source.contains("discovery")) return "discovery";
-                            return "otros"; // 👈 reemplaza null por "otros"
+                            return "otros"; // Para fuentes desconocidas
                         },
                         Collectors.counting()
                 ));
     
-        // Inicializar módulos conocidos con 0
+        // Inicializar todos los módulos con 0 (incluye "otros")
         Map<String, Long> result = new LinkedHashMap<>();
         for (String module : modules) {
             result.put(module, counts.getOrDefault(module, 0L));

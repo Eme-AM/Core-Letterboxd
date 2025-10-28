@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import com.example.CoreBack.config.RabbitConfig;
 
 @Service
-public class RabbitEventPublisher implements EventPublisherTest {
+public class RabbitEventPublisher {
 
     private final AmqpTemplate rabbitTemplate;
 
@@ -14,7 +14,6 @@ public class RabbitEventPublisher implements EventPublisherTest {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    @Override
     public void publish(Object message, String routingKey) {
         rabbitTemplate.convertAndSend(RabbitConfig.EXCHANGE, routingKey, message);
         System.out.println("Evento enviado con routingKey = " + routingKey);
