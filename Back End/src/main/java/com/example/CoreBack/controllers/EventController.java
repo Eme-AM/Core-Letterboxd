@@ -22,6 +22,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
+
+import com.example.CoreBack.security.KeyStore;
 import jakarta.validation.Valid;
 
 @RestController
@@ -32,11 +36,13 @@ public class EventController {
     private final EventRepository eventRepository;
     private final EventService eventService;
     private final RabbitTemplate rabbitTemplate;
+    
 
     public EventController(EventRepository eventRepository, EventService eventService, RabbitTemplate rabbitTemplate) {
         this.eventRepository = eventRepository;
         this.eventService = eventService;
         this.rabbitTemplate = rabbitTemplate;
+        
     }
 
     // ============================================================
@@ -96,34 +102,46 @@ public class EventController {
     @PostMapping("/receive")
     public ResponseEntity<?> receiveEvent(
             @Valid @RequestBody EventDTO eventDTO,
-            @RequestParam(defaultValue = "movie.created") String routingKey
+            @RequestParam(defaultValue = "movie.created") String routingKey,
+            jakarta.servlet.http.HttpServletRequest req
     ) {
         try {
-            System.out.println("📨 Recibiendo evento: " + eventDTO.getType());
-            System.out.println("🔑 Routing Key: " + routingKey);
-            
-            // Enviar a RabbitMQ
-            rabbitTemplate.convertAndSend(
-                "letterboxd_exchange",
-                routingKey,
-                eventDTO
-            );
-            
-            System.out.println("✅ Evento enviado a RabbitMQ exchange: letterboxd_exchange");
-            
+            String apiKey = (String) req.getAttribute("AUTH_API_KEY");
+            if (apiKey == null) {
+                // Si alguien pegó esta acción sin pasar por el filtro (no debería)
+                return ResponseEntity.status(401).body(Map.of("error","Missing or invalid X-API-KEY"));
+            }
+
+            var stored = eventService.processIncomingEvent(eventDTO, routingKey, apiKey);
+
             return ResponseEntity.ok(Map.of(
-                    "status", "sent_to_queue",
-                    "routingKey", routingKey
+                "status", "sent_to_queue",
+                "routingKey", routingKey,
+                "occurredAt", stored.getOccurredAt()
             ));
+        } catch (SecurityException se) {
+            String msg = se.getMessage() != null ? se.getMessage() : "Forbidden";
+            // Distinguí 401/403 si querés: acá mando 403
+            return ResponseEntity.status(403).body(Map.of("error", msg));
         } catch (Exception e) {
-            System.err.println("❌ Error enviando a RabbitMQ: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of(
-                    "status", "error",
-                    "message", e.getMessage()
+                "status", "error",
+                "message", e.getMessage()
             ));
         }
     }
+
+    
+  @GetMapping("/_debug/echo")
+  public Map<String,Object> echo(HttpServletRequest req) {
+    return Map.of(
+      "path", req.getRequestURI(),
+      "xApiKey", String.valueOf(req.getHeader("X-API-KEY"))
+    );
+  }
+
+
+
 
     // ============================================================
     // 4. Estadísticas globales

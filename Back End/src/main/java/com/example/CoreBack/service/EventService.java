@@ -3,6 +3,7 @@ package com.example.CoreBack.service;
 import com.example.CoreBack.entity.EventDTO;
 import com.example.CoreBack.entity.StoredEvent;
 import com.example.CoreBack.repository.EventRepository;
+import com.example.CoreBack.security.KeyStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
@@ -30,18 +31,38 @@ public class EventService {
     private final EventRepository eventRepository;
     private final EventPublisherService publisherService;
     private final ObjectMapper objectMapper;
+    private final KeyStore keyStore;
 
     public EventService(EventRepository eventRepository,
                         EventPublisherService publisherService,
-                        ObjectMapper objectMapper) {
+                        ObjectMapper objectMapper,
+                        KeyStore keyStore) {
         this.eventRepository = eventRepository;
         this.publisherService = publisherService;
         this.objectMapper = objectMapper;
+        this.keyStore = keyStore;
     }
 
     // Procesa y publica evento
-    public StoredEvent processIncomingEvent(@Valid EventDTO eventDTO, String routingKey) {
+    public StoredEvent processIncomingEvent(@Valid EventDTO eventDTO, String routingKey, String apiKey) {
         try {
+            // ---------- AUTORIZACIÓN ----------
+            if (apiKey == null || !keyStore.isValidKey(apiKey)) {
+                throw new SecurityException("Missing or invalid X-API-KEY");
+            }
+            // Autoriza por dominio usando routingKey (ej: "usuarios.usuario.created")
+            if (!keyStore.isTypeAllowed(apiKey, routingKey)) {
+                throw new SecurityException("API Key no autorizada para el routingKey=" + routingKey);
+            }
+            // (Opcional) Si viene source en el body, debe coincidir con la key
+            if (eventDTO.getSource() != null) {
+                String expectedSource = keyStore.sourceOf(apiKey).orElse(null);
+                if (expectedSource != null && !expectedSource.equals(eventDTO.getSource())) {
+                    throw new SecurityException("API Key no autorizada para el source enviado (expected=" 
+                        + expectedSource + ", got=" + eventDTO.getSource() + ")");
+                }
+            }
+            // ---------- TU LÓGICA ORIGINAL ----------
             String type = eventDTO.getType();
             String source = eventDTO.getSource();
             String contentType = eventDTO.getDatacontenttype();
@@ -69,13 +90,23 @@ public class EventService {
             );
 
             storedEvent.setStatus("InQueue");
+
+            // Publicar a Rabbit desde el service (como ya tenías)
             publisherService.publish(eventDTO, routingKey);
 
+            // (Opcional) persistir si corresponde:
+            // storedEvent = eventRepository.save(storedEvent);
+
             return storedEvent;
+
+        } catch (SecurityException se) {
+            // Propagamos para que el controller responda 401/403
+            throw se;
         } catch (Exception e) {
             throw new RuntimeException("Error procesando evento", e);
         }
     }
+
 
     // 🔍 Listar con filtros
     public Map<String, Object> getAllEvents(int page, int size, String module, String status, String search) {
