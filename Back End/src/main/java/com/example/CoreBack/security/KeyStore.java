@@ -15,7 +15,7 @@ public class KeyStore {
   public static final String KEY_SOCIAL         = "sk_core_social_s2Qw8Vn5Jk1Mz7Lp4Rt9HbXe";
   public static final String KEY_DISCOVERY      = "sk_core_discovery_d9Lt2Xw6Qp3Va8Jm5Kr1ZyTc";
   public static final String KEY_ANALYTICS      = "sk_core_analytics_a6Np1Zv8Kr3Qw7Tx2Lm9HdRe";
-  public static final String KEY_RECOMMENDATIONS= "sk_core_recommendations_c5Rj9Wq2Lm8Tx1Nv7Hp3ZaYu";
+  
 
   // Key → source autorizado (debe matchear con el `source` del body)
   private final Map<String, String> keyToSource = Map.of(
@@ -24,8 +24,7 @@ public class KeyStore {
     KEY_RATINGS,         "/ratings/api",
     KEY_SOCIAL,          "/social/api",
     KEY_DISCOVERY,       "/discovery/api",
-    KEY_ANALYTICS,       "/analytics/api",
-    KEY_RECOMMENDATIONS, "/recommendations/api"
+    KEY_ANALYTICS,       "/analytics/api"
   );
 
   // Key → prefijos válidos de `type` (autorización por dominio)
@@ -35,8 +34,7 @@ public class KeyStore {
     KEY_RATINGS,         Set.of("reseñas.", "ratings."),
     KEY_SOCIAL,          Set.of("social."),
     KEY_DISCOVERY,       Set.of("discovery."),
-    KEY_ANALYTICS,       Set.of("analytics."),
-    KEY_RECOMMENDATIONS, Set.of("recommendations.", "recom.")
+    KEY_ANALYTICS,       Set.of("analytics.")
   );
 
   public boolean isValidKey(String apiKey) { return keyToSource.containsKey(apiKey); }
