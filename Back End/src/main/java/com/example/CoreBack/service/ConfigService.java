@@ -2,10 +2,12 @@ package com.example.CoreBack.service;
 
 import com.example.CoreBack.entity.RetryPolicy;
 import com.example.CoreBack.entity.RetryPolicyDTO;
+import com.example.CoreBack.entity.SystemConfigDTO;
+import com.example.CoreBack.entity.ModulePolicyDTO;
 import com.example.CoreBack.repository.RetryPolicyRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -13,11 +15,18 @@ public class ConfigService {
 
     private final RetryPolicyRepository retryPolicyRepository;
 
+    // Variables temporales para probar en memoria
+    private SystemConfigDTO systemConfig = new SystemConfigDTO();
+    private final Map<String, String> modulePolicies = new HashMap<>();
+
     public ConfigService(RetryPolicyRepository retryPolicyRepository) {
         this.retryPolicyRepository = retryPolicyRepository;
     }
 
-    // Crear
+    // ================================
+    // Retry Policies
+    // ================================
+
     public RetryPolicyDTO createRetryPolicy(RetryPolicyDTO dto) {
         RetryPolicy policy = new RetryPolicy();
         policy.setName(dto.getName());
@@ -32,7 +41,6 @@ public class ConfigService {
         return dto;
     }
 
-    // Listar
     public List<RetryPolicyDTO> listRetryPolicies() {
         return retryPolicyRepository.findAll().stream()
                 .map(p -> {
@@ -49,7 +57,6 @@ public class ConfigService {
                 .collect(Collectors.toList());
     }
 
-    // Obtener por ID
     public RetryPolicyDTO getRetryPolicy(Long id) {
         RetryPolicy policy = retryPolicyRepository.findById(id).orElse(null);
         if (policy == null) return null;
@@ -65,7 +72,6 @@ public class ConfigService {
         return dto;
     }
 
-    // Actualizar
     public RetryPolicyDTO updateRetryPolicy(Long id, RetryPolicyDTO dto) {
         RetryPolicy policy = retryPolicyRepository.findById(id).orElseThrow();
 
@@ -81,8 +87,38 @@ public class ConfigService {
         return dto;
     }
 
-    // Eliminar
     public void deleteRetryPolicy(Long id) {
         retryPolicyRepository.deleteById(id);
+    }
+
+    // ================================
+    // System Configuration
+    // ================================
+
+    public void saveSystemConfig(SystemConfigDTO dto) {
+        this.systemConfig = dto;
+    }
+
+    public SystemConfigDTO getSystemConfig() {
+        return this.systemConfig;
+    }
+
+    // ================================
+    // Module Policies
+    // ================================
+
+    public void assignPolicyToModule(ModulePolicyDTO dto) {
+        modulePolicies.put(dto.getModuleName(), dto.getPolicyName());
+    }
+
+    public List<Map<String, String>> getModulesAndPolicies() {
+        List<Map<String, String>> result = new ArrayList<>();
+        for (Map.Entry<String, String> entry : modulePolicies.entrySet()) {
+            Map<String, String> map = new HashMap<>();
+            map.put("module", entry.getKey());
+            map.put("policy", entry.getValue());
+            result.add(map);
+        }
+        return result;
     }
 }
