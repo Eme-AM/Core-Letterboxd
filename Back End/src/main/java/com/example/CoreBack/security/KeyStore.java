@@ -31,7 +31,7 @@ public class KeyStore {
   private final Map<String, Set<String>> keyToTypePrefixes = Map.of(
     KEY_USUARIOS,        Set.of("usuarios."),
     KEY_MOVIES,          Set.of("peliculas.", "movies."),
-    KEY_RATINGS,         Set.of("reseñas.", "ratings."),
+    KEY_RATINGS,         Set.of("resenas.", "ratings."),
     KEY_SOCIAL,          Set.of("social."),
     KEY_DISCOVERY,       Set.of("discovery."),
     KEY_ANALYTICS,       Set.of("analytics.")
