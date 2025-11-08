@@ -16,6 +16,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -54,32 +55,34 @@ public class EventService {
             if (!keyStore.isTypeAllowed(apiKey, routingKey)) {
                 throw new SecurityException("API Key no autorizada para el routingKey=" + routingKey);
             }
-            // (Opcional) Si viene source en el body, debe coincidir con la key
+            // (Opcional) source debe coincidir con la key
             if (eventDTO.getSource() != null) {
                 String expectedSource = keyStore.sourceOf(apiKey).orElse(null);
                 if (expectedSource != null && !expectedSource.equals(eventDTO.getSource())) {
-                    throw new SecurityException("API Key no autorizada para el source enviado (expected=" 
-                        + expectedSource + ", got=" + eventDTO.getSource() + ")");
+                    throw new SecurityException("API Key no autorizada para el source enviado (expected="
+                            + expectedSource + ", got=" + eventDTO.getSource() + ")");
                 }
             }
-            // ---------- TU LÓGICA ORIGINAL ----------
+
+            // ---------- DATOS PRINCIPALES ----------
             String type = eventDTO.getType();
             String source = eventDTO.getSource();
             String contentType = eventDTO.getDatacontenttype();
 
             String payloadJson = objectMapper.writeValueAsString(eventDTO.getData());
 
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime sysDate = eventDTO.getSysDate();
+            // Normalizamos todo a UTC y trabajamos con LocalDateTime
+            LocalDateTime nowUtc = LocalDateTime.now(ZoneOffset.UTC);
+            LocalDateTime sysDateUtc = (eventDTO.getSysDate() != null)
+                    ? eventDTO.getSysDate().withOffsetSameInstant(ZoneOffset.UTC).toLocalDateTime()
+                    : null;
 
-            LocalDateTime occurredAt;
-            if (sysDate != null &&
-                !sysDate.isAfter(now.plusMinutes(5)) &&
-                !sysDate.isBefore(now.minusDays(1))) {
-                occurredAt = sysDate;
-            } else {
-                occurredAt = now;
-            }
+            // Ventana de aceptación: [now-1d, now+5m]
+            LocalDateTime occurredAt = (sysDateUtc != null
+                    && !sysDateUtc.isAfter(nowUtc.plusMinutes(5))
+                    && !sysDateUtc.isBefore(nowUtc.minusDays(1)))
+                    ? sysDateUtc
+                    : nowUtc;
 
             StoredEvent storedEvent = new StoredEvent(
                     type,
@@ -88,10 +91,9 @@ public class EventService {
                     payloadJson,
                     occurredAt
             );
-
             storedEvent.setStatus("InQueue");
 
-            // Publicar a Rabbit desde el service (como ya tenías)
+            // Publicar a Rabbit (tu lógica existente)
             publisherService.publish(eventDTO, routingKey);
 
             // (Opcional) persistir si corresponde:
@@ -107,30 +109,29 @@ public class EventService {
         }
     }
 
-
     // 🔍 Listar con filtros
     public Map<String, Object> getAllEvents(int page, int size, String module, String status, String search) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "occurredAt"));
-    
+
         Specification<StoredEvent> spec = Specification.where(null);
-    
+
         if (module != null && !module.isBlank()) {
             spec = spec.and((root, query, cb) ->
                     cb.like(cb.lower(root.get("source")), "%" + module.toLowerCase() + "%"));
         }
-    
+
         if (status != null && !status.isBlank()) {
             spec = spec.and((root, query, cb) ->
                     cb.equal(cb.lower(root.get("status")), status.toLowerCase()));
         }
-    
+
         if (search != null && !search.isBlank()) {
             spec = spec.and((root, query, cb) ->
                     cb.like(cb.lower(root.get("payload")), "%" + search.toLowerCase() + "%"));
         }
-    
+
         Page<StoredEvent> filteredPage = eventRepository.findAll(spec, pageable);
-    
+
         return Map.of(
                 "page", page,
                 "size", size,
@@ -138,7 +139,6 @@ public class EventService {
                 "events", filteredPage.getContent()
         );
     }
-    
 
     // 📊 Estadísticas globales
     public Map<String, Object> getGlobalStats() {
@@ -224,7 +224,7 @@ public class EventService {
     public Map<String, Long> getEventsPerModule() {
         // Lista de módulos conocidos
         List<String> modules = List.of("usuarios", "social", "reviews", "peliculas", "discovery");
-   
+
         // Conteo real
         Map<String, Long> counts = eventRepository.findAll().stream()
                 .filter(e -> e.getSource() != null)
@@ -236,23 +236,17 @@ public class EventService {
                             if (source.contains("review")) return "reviews";
                             if (source.contains("movie") || source.contains("pelicula")) return "peliculas";
                             if (source.contains("discovery")) return "discovery";
-                            return "otros"; // 👈 reemplaza null por "otros"
+                            return "otros";
                         },
                         Collectors.counting()
                 ));
-   
+
         // Inicializar módulos conocidos con 0
         Map<String, Long> result = new LinkedHashMap<>();
         for (String module : modules) {
             result.put(module, counts.getOrDefault(module, 0L));
         }
-   
+
         return result;
     }
- 
-    
-    
-    
-    
-
 }
