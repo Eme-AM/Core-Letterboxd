@@ -23,6 +23,7 @@ public class TestConfig {
     @Primary
     public SecurityFilterChain testFilterChain(HttpSecurity http) throws Exception {
         return http
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz.anyRequest().permitAll())
             .build();
     }
