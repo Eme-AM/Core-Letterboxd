@@ -8,14 +8,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -30,19 +26,9 @@ import com.example.CoreBack.service.EventPublisherService;
  * Verifica el endpoint de prueba para eventos
  */
 @WebMvcTest(TestController.class)
-@Import(TestControllerTest.TestConfig.class)
+@AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
 class TestControllerTest {
-
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        @Primary
-        public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-            http.authorizeHttpRequests(authz -> authz.anyRequest().permitAll())
-                .csrf(csrf -> csrf.disable());
-            return http.build();
-        }
-    }
 
     @Autowired
     private MockMvc mockMvc;
