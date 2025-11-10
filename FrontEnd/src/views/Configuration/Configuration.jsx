@@ -112,7 +112,7 @@ function Configuration() {
             <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
             <main className={`dashboard-main ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
                 <HeaderSection title={'Configuration'} subtitle={'Monitoring & Management system’s events in real time'} />
-                <SwitcherSection value={showPolicies} onChange={setShowPolicies} />
+                {/*<SwitcherSection value={showPolicies} onChange={setShowPolicies} />*/}
                 {showPolicies ? (
                     <>
                         <Policy policy={policy} setPolicy={setPolicy} reloadPolicies={reloadPolicies} />
@@ -127,7 +127,7 @@ function Configuration() {
                                     <StateTag state={policy.enabled ? 'Enabled' : 'Disabled'} />,
                                     policy.backoffMultiplier + 'x',
                                     <>
-                                        <a href='#policy'>
+                                        <a href='#policy' className={styles.hFit}>
                                             <img
                                                 src={edit}
                                                 alt="Edit policy"
@@ -149,7 +149,7 @@ function Configuration() {
                             <div id='policy'>
                                 <Policy policy={policyEdit} setPolicy={setPolicyEdit} reloadPolicies={reloadPolicies} />
                             </div>
-                        }
+                        }{/*
                         <ContainerSection title={'Modules'} subtitle={"Policies asigned to each module."}>
                             <Table
                                 headers={["Module", "Policy Asigned"]}
@@ -169,10 +169,8 @@ function Configuration() {
                                         ]}
                                     />
                                 ]}
-                            />
-                            {/*value={moduleFilter}
-                                        onChange={(e) => setModuleFilter(e.target.value)}*/}
-                        </ContainerSection>
+                            /> 
+                        </ContainerSection>*/}
                     </>
                 ) : (
                     <GeneralConfiguration />

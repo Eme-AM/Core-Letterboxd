@@ -6,17 +6,22 @@ import {
   LayoutDashboard,
   MessageSquare,
   Settings,
+  LogOut
 } from "lucide-react";
 import "./Sidebar.css";
 
 function Sidebar({ isOpen, setIsOpen }) {
   const location = useLocation();
   const toggleSidebar = () => setIsOpen(!isOpen);
-
+  const logout = () => {
+    localStorage.removeItem("access_token");
+    window.location.href = "/";
+  };
   const menuItems = [
     { name: "Dashboard", path: "/", icon: LayoutDashboard },
     { name: "Messages", path: "/messages", icon: MessageSquare },
     { name: "Configuration", path: "/configuration", icon: Settings },
+    { name: "Logout", path: "", icon: LogOut },
   ];
 
   return (
@@ -43,6 +48,11 @@ function Sidebar({ isOpen, setIsOpen }) {
               key={item.name}
               to={item.path}
               className={`sidebar-item ${isActive ? "active" : ""}`}
+              onClick={() => {
+                if (item.name === "Logout") {
+                  logout(); // tu función para cerrar sesión
+                }
+              }}
             >
               <div className="sidebar-icon">
                 <Icon size={22} />
