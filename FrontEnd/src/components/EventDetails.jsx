@@ -11,7 +11,7 @@ import api from "../axios";
 function EventDetails({ event, onClose }) {
 
   const [activeTab, setActiveTab] = useState("details");
-  const [timeline, setTimeline] = useState("details");
+  const [timeline, setTimeline] = useState([]);
 
   useEffect(() => {
     if (event) {
