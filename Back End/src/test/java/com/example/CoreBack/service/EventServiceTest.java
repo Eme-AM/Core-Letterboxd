@@ -1,8 +1,6 @@
 package com.example.CoreBack.service;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,12 +11,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.mockito.ArgumentMatchers;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-
-import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -33,15 +30,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Tests unitarios para EventService (autorización + outbox).
+ * Tests unitarios para EventService (con autorización por API Key).
  */
 @ExtendWith(MockitoExtension.class)
 class EventServiceTest {
 
-    @org.mockito.Mock private EventRepository eventRepository;
-    @org.mockito.Mock private EventPublisherService publisherService;
-    @org.mockito.Mock private ObjectMapper objectMapper;
-    @org.mockito.Mock private KeyStore keyStore;
+    @Mock private EventRepository eventRepository;
+    @Mock private EventPublisherService publisherService;
+    @Mock private ObjectMapper objectMapper;
+    @Mock private KeyStore keyStore;
 
     private EventService eventService;
 
@@ -54,21 +51,17 @@ class EventServiceTest {
     }
 
     @Test
-    @DisplayName("processIncomingEvent: evento válido -> persiste PENDING y llama trySend")
-    void processIncomingEvent_withValidEvent_shouldPersistAndTrySend() throws Exception {
-        EventDTO validEventDTO = TestData.Events.validEventDTO();
-        validEventDTO.setSysDate(OffsetDateTime.now(ZoneOffset.UTC));
-
+    @DisplayName("processIncomingEvent procesa evento válido con autorización OK")
+    void processIncomingEvent_withValidEvent_shouldProcessSuccessfully() throws Exception {
+        EventDTO validEventDTO = TestData.Events.validEventDTO(); // asegúrate que source = "/usuarios/api"
         String routingKey = "usuarios.usuario.created";
         String payloadJson = "{\"userId\":\"12345\",\"email\":\"user@example.com\"}";
 
         when(keyStore.isValidKey(API_KEY)).thenReturn(true);
         when(keyStore.isTypeAllowed(API_KEY, routingKey)).thenReturn(true);
         when(keyStore.sourceOf(API_KEY)).thenReturn(Optional.of(SOURCE_OK));
-        when(objectMapper.writeValueAsString(any())).thenReturn(payloadJson);
-        when(eventRepository.save(any(StoredEvent.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        doNothing().when(publisherService).trySend(any(StoredEvent.class));
+        when(objectMapper.writeValueAsString(any())).thenReturn(payloadJson);
 
         StoredEvent result = eventService.processIncomingEvent(validEventDTO, routingKey, API_KEY);
 
@@ -77,45 +70,29 @@ class EventServiceTest {
         assertEquals(validEventDTO.getSource(), result.getSource());
         assertEquals(validEventDTO.getDatacontenttype(), result.getContentType());
         assertEquals(payloadJson, result.getPayload());
-        assertEquals("PENDING", result.getStatus());
-        assertEquals(routingKey, result.getRoutingKey());
         assertNotNull(result.getOccurredAt());
-        assertNotNull(result.getNextAttemptAt());
 
         verify(objectMapper).writeValueAsString(validEventDTO.getData());
-        verify(eventRepository).save(any(StoredEvent.class));
-
-        ArgumentCaptor<StoredEvent> evCaptor = ArgumentCaptor.forClass(StoredEvent.class);
-        verify(publisherService).trySend(evCaptor.capture());
-        StoredEvent sent = evCaptor.getValue();
-        assertEquals("PENDING", sent.getStatus());
-        assertEquals(routingKey, sent.getRoutingKey());
-        assertEquals(payloadJson, sent.getPayload());
+        verify(publisherService).publish(validEventDTO, routingKey);
     }
 
     @Test
     @DisplayName("processIncomingEvent rechaza si la apiKey es inválida")
-    void processIncomingEvent_withInvalidApiKey_shouldThrowSecurityException() {
+    void processIncomingEvent_withInvalidApiKey_shouldThrowSecurityException() throws Exception {
         EventDTO dto = TestData.Events.validEventDTO();
-        dto.setSysDate(OffsetDateTime.now(ZoneOffset.UTC));
-
         when(keyStore.isValidKey(API_KEY)).thenReturn(false);
 
         SecurityException ex = assertThrows(SecurityException.class, () ->
             eventService.processIncomingEvent(dto, "usuarios.usuario.created", API_KEY)
         );
         assertTrue(ex.getMessage().contains("Missing or invalid X-API-KEY"));
-
         verifyNoInteractions(publisherService);
-        verify(eventRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("processIncomingEvent rechaza si el routingKey no está autorizado")
-    void processIncomingEvent_withForbiddenRoutingKey_shouldThrowSecurityException() {
+    void processIncomingEvent_withForbiddenRoutingKey_shouldThrowSecurityException() throws Exception {
         EventDTO dto = TestData.Events.validEventDTO();
-        dto.setSysDate(OffsetDateTime.now(ZoneOffset.UTC));
-
         when(keyStore.isValidKey(API_KEY)).thenReturn(true);
         when(keyStore.isTypeAllowed(API_KEY, "movies.movie.created")).thenReturn(false);
 
@@ -123,16 +100,13 @@ class EventServiceTest {
             eventService.processIncomingEvent(dto, "movies.movie.created", API_KEY)
         );
         assertTrue(ex.getMessage().contains("no autorizada para el routingKey"));
-
         verifyNoInteractions(publisherService);
-        verify(eventRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("processIncomingEvent rechaza si el source no coincide con la key")
-    void processIncomingEvent_withMismatchedSource_shouldThrowSecurityException() {
-        EventDTO dto = TestData.Builder.event().withSource("/movies/api")
-                .withSysDate(OffsetDateTime.now(ZoneOffset.UTC)).build();
+    void processIncomingEvent_withMismatchedSource_shouldThrowSecurityException() throws Exception {
+        EventDTO dto = TestData.Builder.event().withSource("/movies/api").build();
 
         when(keyStore.isValidKey(API_KEY)).thenReturn(true);
         when(keyStore.isTypeAllowed(API_KEY, "usuarios.usuario.created")).thenReturn(true);
@@ -142,26 +116,19 @@ class EventServiceTest {
             eventService.processIncomingEvent(dto, "usuarios.usuario.created", API_KEY)
         );
         assertTrue(ex.getMessage().contains("API Key no autorizada para el source"));
-
         verifyNoInteractions(publisherService);
-        verify(eventRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("processIncomingEvent usa fecha actual cuando sysDate es nulo y llama trySend")
-    void processIncomingEvent_withNullSysDate_shouldUseCurrentTime_AndTrySend() throws Exception {
-        EventDTO dto = TestData.Builder.event()
-                .withSysDate((OffsetDateTime) null)
-                .withSource(SOURCE_OK)
-                .build();
-
+    @DisplayName("processIncomingEvent usa fecha actual cuando sysDate es nulo")
+    void processIncomingEvent_withNullSysDate_shouldUseCurrentTime() throws Exception {
+        EventDTO dto = TestData.Builder.event().withSysDate(null).withSource(SOURCE_OK).build();
         String routingKey = "usuarios.usuario.updated";
 
         when(keyStore.isValidKey(API_KEY)).thenReturn(true);
         when(keyStore.isTypeAllowed(API_KEY, routingKey)).thenReturn(true);
         when(keyStore.sourceOf(API_KEY)).thenReturn(Optional.of(SOURCE_OK));
         when(objectMapper.writeValueAsString(any())).thenReturn("{\"test\":\"data\"}");
-        when(eventRepository.save(any(StoredEvent.class))).thenAnswer(inv -> inv.getArgument(0));
 
         LocalDateTime before = LocalDateTime.now().minusSeconds(1);
         StoredEvent result = eventService.processIncomingEvent(dto, routingKey, API_KEY);
@@ -170,18 +137,13 @@ class EventServiceTest {
         assertNotNull(result.getOccurredAt());
         assertTrue(result.getOccurredAt().isAfter(before));
         assertTrue(result.getOccurredAt().isBefore(after));
-
-        verify(publisherService).trySend(any(StoredEvent.class));
+        verify(publisherService).publish(dto, routingKey);
     }
 
     @Test
-    @DisplayName("processIncomingEvent maneja error de serialización JSON (lanza RuntimeException)")
+    @DisplayName("processIncomingEvent maneja error de serialización JSON")
     void processIncomingEvent_withJsonSerializationError_shouldThrowRuntimeException() throws Exception {
-        EventDTO dto = TestData.Builder.event()
-                .withSource(SOURCE_OK)
-                .withSysDate(OffsetDateTime.now(ZoneOffset.UTC))
-                .build();
-
+        EventDTO dto = TestData.Builder.event().withSource(SOURCE_OK).build();
         String routingKey = "usuarios.usuario.created";
         JsonProcessingException jsonEx = new JsonProcessingException("JSON error") {};
 
@@ -195,12 +157,33 @@ class EventServiceTest {
         );
         assertEquals("Error procesando evento", ex.getMessage());
         assertEquals(jsonEx, ex.getCause());
-
         verifyNoInteractions(publisherService);
-        verify(eventRepository, never()).save(any());
     }
 
-    // --- Otros tests (getAllEvents, getGlobalStats, etc.) ---
+    @Test
+    @DisplayName("processIncomingEvent maneja error del publisher")
+    void processIncomingEvent_withPublisherError_shouldThrowRuntimeException() throws Exception {
+        EventDTO dto = TestData.Builder.event().withSource(SOURCE_OK).build();
+        String routingKey = "usuarios.usuario.created";
+        RuntimeException pubEx = new RuntimeException("RabbitMQ connection error");
+
+        when(keyStore.isValidKey(API_KEY)).thenReturn(true);
+        when(keyStore.isTypeAllowed(API_KEY, routingKey)).thenReturn(true);
+        when(keyStore.sourceOf(API_KEY)).thenReturn(Optional.of(SOURCE_OK));
+        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
+        doThrow(pubEx).when(publisherService).publish(any(), any());
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+            eventService.processIncomingEvent(dto, routingKey, API_KEY)
+        );
+        assertEquals("Error procesando evento", ex.getMessage());
+        assertEquals(pubEx, ex.getCause());
+
+        verify(objectMapper).writeValueAsString(dto.getData());
+        verify(publisherService).publish(dto, routingKey);
+    }
+
+    // --- El resto de tests (getAllEvents, getGlobalStats, getEvolution, getEventsPerModule) quedan igual ---
 
     @Test
     @DisplayName("getAllEvents debe filtrar y paginar eventos correctamente")
@@ -212,7 +195,7 @@ class EventServiceTest {
         List<StoredEvent> mockEvents = List.of(e1, e2, e3);
         Page<StoredEvent> mockPage = new PageImpl<>(mockEvents, Pageable.ofSize(10), 3);
 
-        when(eventRepository.findAll(any(Specification.class), any(Pageable.class)))
+        when(eventRepository.findAll(ArgumentMatchers.<Specification<StoredEvent>>any(), any(Pageable.class)))
             .thenReturn(mockPage);
 
         Map<String, Object> result = eventService.getAllEvents(0, 10, "usuarios", "delivered", null);
@@ -223,7 +206,7 @@ class EventServiceTest {
         assertEquals(3L, result.get("total"));
         assertEquals(mockEvents, result.get("events"));
 
-        verify(eventRepository).findAll(any(Specification.class), any(Pageable.class));
+        verify(eventRepository).findAll(ArgumentMatchers.<Specification<StoredEvent>>any(), any(Pageable.class));
     }
 
     @Test
@@ -258,7 +241,6 @@ class EventServiceTest {
     private StoredEvent createStoredEvent(String type, String source, String status) {
         return createStoredEventWithDate(type, source, status, LocalDateTime.now());
     }
-
     private StoredEvent createStoredEventWithDate(String type, String source, String status, LocalDateTime occurredAt) {
         StoredEvent ev = new StoredEvent();
         ev.setEventType(type);

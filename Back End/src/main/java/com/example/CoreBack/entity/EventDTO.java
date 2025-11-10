@@ -1,30 +1,48 @@
 package com.example.CoreBack.entity;
 
-import com.example.CoreBack.config.LenientOffsetDateTimeDeserializer;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.Map;
 
-@Data
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 public class EventDTO {
 
+    
+
     @NotBlank(message = "El campo 'type' es obligatorio")
-    private String type;
+    private String type; // Ej: "user.created"
 
     @NotBlank(message = "El campo 'source' es obligatorio")
-    private String source;
+    private String source; // Ej: "/users/signup"
 
     @NotBlank(message = "El campo 'datacontenttype' es obligatorio")
-    private String datacontenttype;
+    private String datacontenttype; // Ej: "application/json"
 
-    // ✅ Ahora acepta con o sin offset. Si falta, asume UTC (o el offset que configures)
-    @JsonDeserialize(using = LenientOffsetDateTimeDeserializer.class)
-    private OffsetDateTime sysDate;
+    private LocalDateTime sysDate; // quitar @NotNull
+
 
     @NotNull(message = "El campo 'data' es obligatorio")
-    private Map<String, Object> data;
+    private Map<String, Object> data; // Payload dinámico
+
+    public EventDTO() {}
+
+    // Getters y Setters
+
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
+
+    public String getSource() { return source; }
+    public void setSource(String source) { this.source = source; }
+
+    public String getDatacontenttype() { return datacontenttype; }
+    public void setDatacontenttype(String datacontenttype) { this.datacontenttype = datacontenttype; }
+
+    public LocalDateTime getSysDate() { return sysDate; }
+    public void setSysDate(LocalDateTime sysDate) { this.sysDate = sysDate; }
+
+    public Map<String, Object> getData() { return data; }
+    public void setData(Map<String, Object> data) { this.data = data; }
 }
+

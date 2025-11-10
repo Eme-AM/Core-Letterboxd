@@ -1,122 +1,90 @@
 package com.example.CoreBack.service;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.verify;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.core.AmqpTemplate;
 
-import com.example.CoreBack.config.RabbitConfig;
-import com.example.CoreBack.entity.StoredEvent;
-import com.example.CoreBack.repository.EventRepository;
-
+/**
+ * Unit tests for EventPublisherService
+ * 
+ * Tests coverage:
+ * - publish() method basic functionality
+ * - RabbitMQ integration via AmqpTemplate
+ */
 @ExtendWith(MockitoExtension.class)
 class EventPublisherServiceTest {
 
     @Mock
     private AmqpTemplate rabbitTemplate;
 
-    @Mock
-    private EventRepository eventRepository;
-
     @InjectMocks
     private EventPublisherService eventPublisherService;
 
-    @Test
-    @DisplayName("trySend debe enviar un evento PENDING correctamente")
-    void trySend_ShouldSendPendingEventSuccessfully() {
-        // Given
-        StoredEvent ev = new StoredEvent();
-        ev.setRoutingKey("users.created.routing");
-        ev.setPayload("{\"id\":\"test-123\",\"type\":\"user.created\"}");
-        ev.setContentType("application/json");
-        ev.setStatus("PENDING");
-        ev.setAttempts(0);
-        ev.setNextAttemptAt(LocalDateTime.now());
-        ev.setMessageId(UUID.randomUUID().toString());
+    @Captor
+    private ArgumentCaptor<String> exchangeCaptor;
 
-        when(eventRepository.save(any(StoredEvent.class))).thenAnswer(inv -> inv.getArgument(0));
+    @Captor
+    private ArgumentCaptor<String> routingKeyCaptor;
+
+    @Captor
+    private ArgumentCaptor<Object> messageCaptor;
+
+    @Test
+    @DisplayName("publish should invoke rabbitTemplate with correct parameters")
+    void publish_ShouldInvokeRabbitTemplateWithCorrectParameters() {
+        // Given
+        Map<String, Object> message = Map.of("id", "test-123", "type", "user.created");
+        String routingKey = "users.created.routing";
 
         // When
-        eventPublisherService.trySend(ev);
+        eventPublisherService.publish(message, routingKey);
 
-        // Then
-        verify(rabbitTemplate).convertAndSend(
-            eq(RabbitConfig.EXCHANGE),
-            eq(ev.getRoutingKey()),
-            eq(ev.getPayload()),
-            any()
-        );
-
-        verify(eventRepository).save(ev);
-        assertThat(ev.getStatus()).isEqualTo("DELIVERED");
-        assertThat(ev.getDeliveredAt()).isNotNull();
+        // Then - Use ArgumentCaptor to avoid method ambiguity
+        verify(rabbitTemplate).convertAndSend(exchangeCaptor.capture(), routingKeyCaptor.capture(), messageCaptor.capture());
+        
+        assertThat(routingKeyCaptor.getValue()).isEqualTo(routingKey);
+        assertThat(messageCaptor.getValue()).isEqualTo(message);
     }
 
     @Test
-    @DisplayName("trySend debe reprogramar reintento si RabbitMQ está caído")
-    void trySend_ShouldScheduleRetryWhenBrokerDown() {
+    @DisplayName("publish should work with null message")
+    void publish_WithNullMessage_ShouldStillCallTemplate() {
         // Given
-        StoredEvent ev = new StoredEvent();
-        ev.setRoutingKey("users.created.routing");
-        ev.setPayload("{\"id\":\"test-123\"}");
-        ev.setContentType("application/json");
-        ev.setStatus("PENDING");
-        ev.setAttempts(0);
-        ev.setNextAttemptAt(LocalDateTime.now());
-        ev.setMessageId(UUID.randomUUID().toString());
-
-        when(eventRepository.save(any(StoredEvent.class))).thenAnswer(inv -> inv.getArgument(0));
-        doThrow(new AmqpConnectException(new RuntimeException("Connection refused")))
-            .when(rabbitTemplate)
-            .convertAndSend(anyString(), anyString(), anyString(), any());
+        String routingKey = "test.routing";
 
         // When
-        eventPublisherService.trySend(ev);
+        eventPublisherService.publish(null, routingKey);
 
         // Then
-        verify(eventRepository, atLeastOnce()).save(ev);
-        assertThat(ev.getStatus()).isEqualTo("PENDING");
-        assertThat(ev.getNextAttemptAt()).isAfter(LocalDateTime.now());
-        assertThat(ev.getError()).contains("Broker down");
+        verify(rabbitTemplate).convertAndSend(exchangeCaptor.capture(), routingKeyCaptor.capture(), messageCaptor.capture());
+        
+        assertThat(routingKeyCaptor.getValue()).isEqualTo(routingKey);
+        assertThat(messageCaptor.getValue()).isNull();
     }
 
     @Test
-    @DisplayName("resendPending debe reenviar eventos pendientes")
-    void resendPending_ShouldResendPendingEvents() {
+    @DisplayName("publish should work with null routing key")
+    void publish_WithNullRoutingKey_ShouldStillCallTemplate() {
         // Given
-        StoredEvent ev = new StoredEvent();
-        ev.setRoutingKey("users.created.routing");
-        ev.setPayload("{\"id\":\"test-456\"}");
-        ev.setContentType("application/json");
-        ev.setStatus("PENDING");
-        ev.setAttempts(0);
-        ev.setNextAttemptAt(LocalDateTime.now().minusSeconds(10));
-        ev.setMessageId(UUID.randomUUID().toString());
-
-        when(eventRepository.findTop100ByStatusInAndNextAttemptAtBeforeOrderByNextAttemptAtAsc(
-            anyList(), any(LocalDateTime.class))
-        ).thenReturn(List.of(ev));
-        when(eventRepository.save(any(StoredEvent.class))).thenAnswer(inv -> inv.getArgument(0));
+        Object message = Map.of("key", "value");
 
         // When
-        eventPublisherService.resendPending();
+        eventPublisherService.publish(message, null);
 
         // Then
-        verify(rabbitTemplate).convertAndSend(eq(RabbitConfig.EXCHANGE), eq(ev.getRoutingKey()), eq(ev.getPayload()), any());
-        verify(eventRepository, atLeastOnce()).save(ev);
-        assertThat(ev.getStatus()).isEqualTo("DELIVERED");
+        verify(rabbitTemplate).convertAndSend(exchangeCaptor.capture(), routingKeyCaptor.capture(), messageCaptor.capture());
+        
+        assertThat(routingKeyCaptor.getValue()).isNull();
+        assertThat(messageCaptor.getValue()).isEqualTo(message);
     }
 }

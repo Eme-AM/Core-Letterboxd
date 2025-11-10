@@ -43,111 +43,94 @@ public class EventService {
         this.keyStore = keyStore;
     }
 
-    // ================================
-    // Procesa y publica (patrón Outbox)
-    // ================================
+    // Procesa y publica evento
     public StoredEvent processIncomingEvent(@Valid EventDTO eventDTO, String routingKey, String apiKey) {
         try {
-            // ===== AUTORIZACIÓN =====
+            // ---------- AUTORIZACIÓN ----------
             if (apiKey == null || !keyStore.isValidKey(apiKey)) {
                 throw new SecurityException("Missing or invalid X-API-KEY");
             }
+            // Autoriza por dominio usando routingKey (ej: "usuarios.usuario.created")
             if (!keyStore.isTypeAllowed(apiKey, routingKey)) {
                 throw new SecurityException("API Key no autorizada para el routingKey=" + routingKey);
             }
-    
-            // Validar source según API Key (si aplica)
+            // (Opcional) Si viene source en el body, debe coincidir con la key
             if (eventDTO.getSource() != null) {
                 String expectedSource = keyStore.sourceOf(apiKey).orElse(null);
                 if (expectedSource != null && !expectedSource.equals(eventDTO.getSource())) {
-                    throw new SecurityException("API Key no autorizada para el source enviado (expected="
-                            + expectedSource + ", got=" + eventDTO.getSource() + ")");
+                    throw new SecurityException("API Key no autorizada para el source enviado (expected=" 
+                        + expectedSource + ", got=" + eventDTO.getSource() + ")");
                 }
             }
-    
-            // ===== SERIALIZAR PAYLOAD =====
+            // ---------- TU LÓGICA ORIGINAL ----------
+            String type = eventDTO.getType();
+            String source = eventDTO.getSource();
+            String contentType = eventDTO.getDatacontenttype();
+
             String payloadJson = objectMapper.writeValueAsString(eventDTO.getData());
+
             LocalDateTime now = LocalDateTime.now();
-    
-            // ===== MANEJO SEGURO DE sysDate =====
-            LocalDateTime sysDate = null;
-            try {
-                if (eventDTO.getSysDate() != null) {
-                    sysDate = eventDTO.getSysDate().toLocalDateTime();
-                }
-            } catch (Exception ex) {
-                // Si vino con formato inválido o sin zona, asumimos null (se tomará como now)
-                sysDate = null;
-            }
-    
-            // Ventana de aceptación: entre ahora -1 día y ahora +5 min
+            LocalDateTime sysDate = eventDTO.getSysDate();
+
             LocalDateTime occurredAt;
             if (sysDate != null &&
                 !sysDate.isAfter(now.plusMinutes(5)) &&
                 !sysDate.isBefore(now.minusDays(1))) {
-                occurredAt = sysDate; // dentro de ventana → respetamos
+                occurredAt = sysDate;
             } else {
-                occurredAt = now; // fuera de ventana → normalizamos
+                occurredAt = now;
             }
-    
-            // ===== CREAR StoredEvent =====
-            StoredEvent stored = new StoredEvent();
-            stored.setEventType(eventDTO.getType());
-            stored.setSource(eventDTO.getSource());
-            stored.setContentType(eventDTO.getDatacontenttype());
-            stored.setPayload(payloadJson);
-            stored.setRoutingKey(routingKey);
-            stored.setOccurredAt(occurredAt);
-    
-            // Outbox pattern
-            stored.setStatus("PENDING");
-            stored.setAttempts(0);
-            stored.setNextAttemptAt(now);
-            stored.setMessageId(java.util.UUID.randomUUID().toString());
-    
-            // Guardar en base
-            stored = eventRepository.save(stored);
-    
-            // Intento inmediato de envío a Rabbit (si falla, scheduler reintenta)
-            try {
-                publisherService.trySend(stored);
-            } catch (Exception ex) {
-                // No romper el flujo: el scheduler se encargará del reintento
-            }
-    
-            return stored;
-    
+
+            StoredEvent storedEvent = new StoredEvent(
+                    type,
+                    source,
+                    contentType,
+                    payloadJson,
+                    occurredAt
+            );
+
+            storedEvent.setStatus("InQueue");
+
+            // Publicar a Rabbit desde el service (como ya tenías)
+            publisherService.publish(eventDTO, routingKey);
+
+            // (Opcional) persistir si corresponde:
+            storedEvent = eventRepository.save(storedEvent);
+
+            return storedEvent;
+
         } catch (SecurityException se) {
+            
             throw se;
         } catch (Exception e) {
             throw new RuntimeException("Error procesando evento", e);
         }
     }
-    
+
 
     // 🔍 Listar con filtros
     public Map<String, Object> getAllEvents(int page, int size, String module, String status, String search) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "occurredAt"));
-
+    
         Specification<StoredEvent> spec = Specification.where(null);
-
+    
         if (module != null && !module.isBlank()) {
             spec = spec.and((root, query, cb) ->
                     cb.like(cb.lower(root.get("source")), "%" + module.toLowerCase() + "%"));
         }
-
+    
         if (status != null && !status.isBlank()) {
             spec = spec.and((root, query, cb) ->
                     cb.equal(cb.lower(root.get("status")), status.toLowerCase()));
         }
-
+    
         if (search != null && !search.isBlank()) {
             spec = spec.and((root, query, cb) ->
                     cb.like(cb.lower(root.get("payload")), "%" + search.toLowerCase() + "%"));
         }
-
+    
         Page<StoredEvent> filteredPage = eventRepository.findAll(spec, pageable);
-
+    
         return Map.of(
                 "page", page,
                 "size", size,
@@ -155,6 +138,7 @@ public class EventService {
                 "events", filteredPage.getContent()
         );
     }
+    
 
     // 📊 Estadísticas globales
     public Map<String, Object> getGlobalStats() {
@@ -179,27 +163,14 @@ public class EventService {
         long totalThisMonth = allEvents.stream().filter(inThisMonth).count();
         long totalLastMonth = allEvents.stream().filter(inLastMonth).count();
 
-        long deliveredThisMonth = allEvents.stream()
-                .filter(e -> e.getStatus() != null && e.getStatus().equalsIgnoreCase("DELIVERED") && inThisMonth.test(e))
-                .count();
-        long deliveredLastMonth = allEvents.stream()
-                .filter(e -> e.getStatus() != null && e.getStatus().equalsIgnoreCase("DELIVERED") && inLastMonth.test(e))
-                .count();
+        long deliveredThisMonth = allEvents.stream().filter(e -> "Delivered".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
+        long deliveredLastMonth = allEvents.stream().filter(e -> "Delivered".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
 
-        // contar pendientes tanto "InQueue" viejo como "PENDING" nuevo
-        Predicate<StoredEvent> isPending = e ->
-                e.getStatus() != null &&
-                (e.getStatus().equalsIgnoreCase("PENDING") || e.getStatus().equalsIgnoreCase("InQueue"));
+        long failedThisMonth = allEvents.stream().filter(e -> "Failed".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
+        long failedLastMonth = allEvents.stream().filter(e -> "Failed".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
 
-        long pendingThisMonth = allEvents.stream().filter(e -> isPending.test(e) && inThisMonth.test(e)).count();
-        long pendingLastMonth = allEvents.stream().filter(e -> isPending.test(e) && inLastMonth.test(e)).count();
-
-        long failedThisMonth = allEvents.stream()
-                .filter(e -> e.getStatus() != null && e.getStatus().equalsIgnoreCase("FAILED") && inThisMonth.test(e))
-                .count();
-        long failedLastMonth = allEvents.stream()
-                .filter(e -> e.getStatus() != null && e.getStatus().equalsIgnoreCase("FAILED") && inLastMonth.test(e))
-                .count();
+        long inQueueThisMonth = allEvents.stream().filter(e -> "InQueue".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
+        long inQueueLastMonth = allEvents.stream().filter(e -> "InQueue".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
 
         BiFunction<Long, Long, Integer> calcChange = (current, previous) -> {
             long difference = current - previous;
@@ -217,8 +188,8 @@ public class EventService {
                 Map.entry("deliveredChange", calcChange.apply(deliveredThisMonth, deliveredLastMonth)),
                 Map.entry("failed", failedThisMonth),
                 Map.entry("failedChange", calcChange.apply(failedThisMonth, failedLastMonth)),
-                Map.entry("pending", pendingThisMonth),
-                Map.entry("pendingChange", calcChange.apply(pendingThisMonth, pendingLastMonth))
+                Map.entry("inQueue", inQueueThisMonth),
+                Map.entry("inQueueChange", calcChange.apply(inQueueThisMonth, inQueueLastMonth))
         );
     }
 
@@ -253,7 +224,7 @@ public class EventService {
     public Map<String, Long> getEventsPerModule() {
         // Lista de módulos conocidos
         List<String> modules = List.of("usuarios", "social", "reviews", "peliculas", "discovery");
-
+   
         // Conteo real
         Map<String, Long> counts = eventRepository.findAll().stream()
                 .filter(e -> e.getSource() != null)
@@ -265,17 +236,23 @@ public class EventService {
                             if (source.contains("review")) return "reviews";
                             if (source.contains("movie") || source.contains("pelicula")) return "peliculas";
                             if (source.contains("discovery")) return "discovery";
-                            return "otros";
+                            return "otros"; // 👈 reemplaza null por "otros"
                         },
                         Collectors.counting()
                 ));
-
+   
         // Inicializar módulos conocidos con 0
         Map<String, Long> result = new LinkedHashMap<>();
         for (String module : modules) {
             result.put(module, counts.getOrDefault(module, 0L));
         }
-
+   
         return result;
     }
+ 
+    
+    
+    
+    
+
 }

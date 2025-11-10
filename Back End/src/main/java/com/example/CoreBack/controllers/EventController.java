@@ -5,21 +5,27 @@ import java.util.Map;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.example.CoreBack.entity.EventDTO;
-import com.example.CoreBack.entity.EventEnvelope;
-import com.example.CoreBack.entity.StoredEvent;
 import com.example.CoreBack.repository.EventRepository;
-import com.example.CoreBack.service.EventBusinessValidator;
 import com.example.CoreBack.service.EventService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
+
+import com.example.CoreBack.security.KeyStore;
 import jakarta.validation.Valid;
 
 @RestController
@@ -30,21 +36,13 @@ public class EventController {
     private final EventRepository eventRepository;
     private final EventService eventService;
     private final RabbitTemplate rabbitTemplate;
-    private final EventBusinessValidator biz;
-    private final ObjectMapper mapper;
+    
 
-    public EventController(
-            EventRepository eventRepository,
-            EventService eventService,
-            RabbitTemplate rabbitTemplate,
-            EventBusinessValidator biz,
-            ObjectMapper mapper
-    ) {
+    public EventController(EventRepository eventRepository, EventService eventService, RabbitTemplate rabbitTemplate) {
         this.eventRepository = eventRepository;
         this.eventService = eventService;
         this.rabbitTemplate = rabbitTemplate;
-        this.biz = biz;
-        this.mapper = mapper;
+        
     }
 
     // ============================================================
@@ -93,7 +91,7 @@ public class EventController {
     }
 
     // ============================================================
-    // 3. Recibir un nuevo evento (v1 endurecido con validaciones)
+    // 3. Recibir un nuevo evento
     // ============================================================
     @Operation(summary = "Recibir un nuevo evento", description = "Procesa un evento entrante y lo almacena")
     @Parameter(name = "routingKey", description = "Clave de enrutamiento", example = "movie.created")
@@ -105,37 +103,25 @@ public class EventController {
     public ResponseEntity<?> receiveEvent(
             @Valid @RequestBody EventDTO eventDTO,
             @RequestParam(defaultValue = "movie.created") String routingKey,
-            HttpServletRequest req
+            jakarta.servlet.http.HttpServletRequest req
     ) {
         try {
             String apiKey = (String) req.getAttribute("AUTH_API_KEY");
             if (apiKey == null) {
+                // Si alguien pegó esta acción sin pasar por el filtro (no debería)
                 return ResponseEntity.status(401).body(Map.of("error","Missing or invalid X-API-KEY"));
             }
 
-            // ===== Validaciones de negocio reusando el Envelope =====
-            EventEnvelope envelope = new EventEnvelope();
-            envelope.setType(eventDTO.getType());
-            envelope.setSource(eventDTO.getSource());
-            envelope.setDatacontenttype(eventDTO.getDatacontenttype());
-            envelope.setSysDate(eventDTO.getSysDate()); // EventDTO.sysDate es OffsetDateTime
-            envelope.setData(mapper.valueToTree(eventDTO.getData()));
-
-           
-            
-            // ========================================================
-
-            StoredEvent stored = eventService.processIncomingEvent(eventDTO, routingKey, apiKey);
+            var stored = eventService.processIncomingEvent(eventDTO, routingKey, apiKey);
 
             return ResponseEntity.ok(Map.of(
                 "status", "sent_to_queue",
                 "routingKey", routingKey,
                 "occurredAt", stored.getOccurredAt()
             ));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", ex.getMessage()));
         } catch (SecurityException se) {
             String msg = se.getMessage() != null ? se.getMessage() : "Forbidden";
+            // Distinguí 401/403 si querés: acá mando 403
             return ResponseEntity.status(403).body(Map.of("error", msg));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -145,76 +131,20 @@ public class EventController {
         }
     }
 
-    // ============================================================
-    // 3B. Recibir evento validado (EventEnvelope + reglas negocio)
-    // ============================================================
-    @PostMapping("/receive-v2")
-    public ResponseEntity<?> receiveValidatedEvent(
-            @Valid @RequestBody EventEnvelope event,
-            @RequestParam(defaultValue = "movie.created") String routingKey,
-            HttpServletRequest req
-    ) {
-        try {
-            String apiKey = (String) req.getAttribute("AUTH_API_KEY");
-            if (apiKey == null) {
-                return ResponseEntity.status(401).body(Map.of("error","Missing or invalid X-API-KEY"));
-            }
+    
+  @GetMapping("/_debug/echo")
+  public Map<String,Object> echo(HttpServletRequest req) {
+    return Map.of(
+      "path", req.getRequestURI(),
+      "xApiKey", String.valueOf(req.getHeader("X-API-KEY"))
+    );
+  }
 
-            // Validaciones de negocio
-            biz.validateSkew(event);
-            biz.validateTypeSourceConsistency(event);
 
-            // Mapeo a tu EventDTO actual
-            EventDTO dto = mapEnvelopeToDTO(event);
 
-            StoredEvent stored = eventService.processIncomingEvent(dto, routingKey, apiKey);
-
-            return ResponseEntity.ok(Map.of(
-                "status", "sent_to_queue",
-                "routingKey", routingKey,
-                "occurredAt", stored.getOccurredAt()
-            ));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", ex.getMessage()));
-        } catch (SecurityException se) {
-            String msg = se.getMessage() != null ? se.getMessage() : "Forbidden";
-            return ResponseEntity.status(403).body(Map.of("error", msg));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", e.getMessage()));
-        }
-    }
-
-    /** Mapeo exacto al formato de tu EventDTO */
-    private EventDTO mapEnvelopeToDTO(EventEnvelope ev) {
-        EventDTO dto = new EventDTO();
-
-        dto.setType(ev.getType());
-        dto.setSource(ev.getSource());
-        dto.setDatacontenttype(ev.getDatacontenttype());
-
-        if (ev.getSysDate() != null) {
-            dto.setSysDate(ev.getSysDate()); // ya es OffsetDateTime en ambos
-        }
-
-        Map<String, Object> dataMap = mapper.convertValue(ev.getData(), Map.class);
-        dto.setData(dataMap);
-
-        return dto;
-    }
 
     // ============================================================
-    // 4. Debug endpoint
-    // ============================================================
-    @GetMapping("/_debug/echo")
-    public Map<String,Object> echo(HttpServletRequest req) {
-        return Map.of(
-          "path", req.getRequestURI(),
-          "xApiKey", String.valueOf(req.getHeader("X-API-KEY"))
-        );
-    }
-
-    // ============================================================
-    // 5. Estadísticas globales
+    // 4. Estadísticas globales
     // ============================================================
     @Operation(summary = "Obtener estadísticas globales", description = "Métricas de eventos (totales, fallidos, entregados, en cola)")
     @GetMapping("/stats")
@@ -223,7 +153,7 @@ public class EventController {
     }
 
     // ============================================================
-    // 6. Evolución últimas 24h
+    // 5. Evolución últimas 24h
     // ============================================================
     @Operation(summary = "Evolución de eventos", description = "Cantidad de eventos por hora en las últimas 24h")
     @GetMapping("/evolution")
@@ -232,7 +162,7 @@ public class EventController {
     }
 
     // ============================================================
-    // 7. Eventos por módulo
+    // 6. Eventos por módulo
     // ============================================================
     @Operation(summary = "Eventos por módulo", description = "Devuelve un conteo agrupado por módulo")
     @GetMapping("/per-module")
