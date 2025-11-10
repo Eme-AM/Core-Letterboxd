@@ -1,4 +1,6 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import Dashboard from './views/Dashboard';
 import Messages from './views/Messages/Messages';
 import Subscriptions from './views/Subscriptions';
@@ -13,8 +15,8 @@ function EventDetails() {
 
 function App() {
   return (
-    <>
-      <Router>
+    <BrowserRouter>
+      <AuthProvider>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/configuration" element={<Configuration />} />
@@ -23,16 +25,8 @@ function App() {
           <Route path="/messages" element={<Messages />} />
           <Route path="/login" element={<Login />} />
         </Routes>
-      </Router>
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        pauseOnHover 
-      />
-    </>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

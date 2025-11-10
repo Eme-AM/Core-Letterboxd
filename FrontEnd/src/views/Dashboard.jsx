@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import './Dashboard.scss';
 import MetricCard from '../components/MetricCard';
 import Sidebar from '../components/Sidebar';
@@ -35,6 +37,8 @@ const toPercent = (v) => {
 };
 
 function Dashboard() {
+  const navigate = useNavigate();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null); 
   const [events, setEvents] = useState([]);
@@ -42,9 +46,17 @@ function Dashboard() {
   const [eventsPerModuleData, setEventsPerModuleData] = useState([]);
   const [stats, setStats] = useState([]);
 
+  useEffect(() => {
+    if (!isAuthLoading && !user) {
+      navigate('/login', { replace: true });
+    }
+  }, [user, isAuthLoading, navigate]);
 
   useEffect(() => {
-    // 1) Stats
+    if (isAuthLoading || !user) {
+      return;
+    }
+
     api
       .get(`events/stats`)
       .then(res => {
@@ -60,35 +72,26 @@ function Dashboard() {
       })
       .catch(err => {
         console.error('Error fetching stats:', err);
-      })
-      .finally(() => {
-        //setLoading(false);
       });
-    // 2) Evolution
+    
     api
       .get(`events/evolution`)
       .then(res => {
         if (res.data) {
           const formattedData = res.data.map(item => {
-            // Restar 3 horas y ajustar el rango
             const hourAdjusted = ((item.hour - 3 + 24) % 24);
             return {
               time: hourAdjusted.toString().padStart(2, '0') + "hs",
               value: item.count
             };
           });
-
           setEventsEvolutionData(formattedData);
         }
       })
       .catch(err => {
         console.error('Error fetching evolution data:', err);
-      })
-      .finally(() => {
-        //setLoading(false);
       });
-    // 3) Per-module
-
+    
     api
       .get(`events/per-module`)
       .then(res => {
@@ -97,17 +100,13 @@ function Dashboard() {
             module: key,
             value: value
           }));
-
           setEventsPerModuleData(formattedData);
         }
       })
       .catch(err => {
         console.error('Error fetching per-module data:', err);
-      })
-      .finally(() => {
-        //setLoading(false);
       });
-    // 4) Recent Events
+    
     api
       .get(`events?size=5`)
       .then(res => {
@@ -117,11 +116,23 @@ function Dashboard() {
       })
       .catch(err => {
         console.error('Error fetching recent events:', err);
-      })
-      .finally(() => {
-        //setLoading(false);
       });
-  }, []);
+  }, [isAuthLoading, user]);
+
+  if (isAuthLoading) {
+    return (
+      <div className="dashboard-container">
+        <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+        <main className={`dashboard-main ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
+          <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="dashboard-container">
