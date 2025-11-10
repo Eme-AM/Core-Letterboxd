@@ -25,7 +25,7 @@ public class RabbitConfig {
     // Routing keys base
     public static final String RK_MOVIE = "peliculas.#";
     public static final String RK_USER = "usuarios.#";
-    public static final String RK_RATING = "reseñas.#";
+    public static final String RK_RATING = "resenas.#";
     public static final String RK_DISCOVERY = "discovery.#";
     public static final String RK_SOCIAL = "social.#";
     public static final String RK_ALL = "#"; // recibe todo
