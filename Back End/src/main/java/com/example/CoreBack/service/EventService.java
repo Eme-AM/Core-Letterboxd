@@ -16,7 +16,6 @@ import org.springframework.data.jpa.domain.Specification;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -44,18 +43,19 @@ public class EventService {
         this.keyStore = keyStore;
     }
 
-    // Procesa y publica evento
+    // ================================
+    // Procesa y publica (patrón Outbox)
+    // ================================
     public StoredEvent processIncomingEvent(@Valid EventDTO eventDTO, String routingKey, String apiKey) {
         try {
-            // ---------- AUTORIZACIÓN ----------
+            // ----- AUTORIZACIÓN -----
             if (apiKey == null || !keyStore.isValidKey(apiKey)) {
                 throw new SecurityException("Missing or invalid X-API-KEY");
             }
-            // Autoriza por dominio usando routingKey (ej: "usuarios.usuario.created")
             if (!keyStore.isTypeAllowed(apiKey, routingKey)) {
                 throw new SecurityException("API Key no autorizada para el routingKey=" + routingKey);
             }
-            // (Opcional) source debe coincidir con la key
+            // (Opcional) validar source contra la key
             if (eventDTO.getSource() != null) {
                 String expectedSource = keyStore.sourceOf(apiKey).orElse(null);
                 if (expectedSource != null && !expectedSource.equals(eventDTO.getSource())) {
@@ -64,45 +64,42 @@ public class EventService {
                 }
             }
 
-            // ---------- DATOS PRINCIPALES ----------
-            String type = eventDTO.getType();
-            String source = eventDTO.getSource();
-            String contentType = eventDTO.getDatacontenttype();
-
+            // ----- ARMAR StoredEvent -----
             String payloadJson = objectMapper.writeValueAsString(eventDTO.getData());
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime sysDate = eventDTO.getSysDate() != null
+        ? eventDTO.getSysDate().toLocalDateTime()
+        : null;
 
-            // Normalizamos todo a UTC y trabajamos con LocalDateTime
-            LocalDateTime nowUtc = LocalDateTime.now(ZoneOffset.UTC);
-            LocalDateTime sysDateUtc = (eventDTO.getSysDate() != null)
-                    ? eventDTO.getSysDate().withOffsetSameInstant(ZoneOffset.UTC).toLocalDateTime()
-                    : null;
 
             // Ventana de aceptación: [now-1d, now+5m]
-            LocalDateTime occurredAt = (sysDateUtc != null
-                    && !sysDateUtc.isAfter(nowUtc.plusMinutes(5))
-                    && !sysDateUtc.isBefore(nowUtc.minusDays(1)))
-                    ? sysDateUtc
-                    : nowUtc;
+            LocalDateTime occurredAt = (sysDate != null &&
+                    !sysDate.isAfter(now.plusMinutes(5)) &&
+                    !sysDate.isBefore(now.minusDays(1)))
+                    ? sysDate : now;
 
-            StoredEvent storedEvent = new StoredEvent(
-                    type,
-                    source,
-                    contentType,
-                    payloadJson,
-                    occurredAt
-            );
-            storedEvent.setStatus("InQueue");
+            StoredEvent stored = new StoredEvent();
+            stored.setEventType(eventDTO.getType());
+            stored.setSource(eventDTO.getSource());
+            stored.setContentType(eventDTO.getDatacontenttype());
+            stored.setPayload(payloadJson);
+            stored.setRoutingKey(routingKey);
+            stored.setOccurredAt(occurredAt);
 
-            // Publicar a Rabbit (tu lógica existente)
-            publisherService.publish(eventDTO, routingKey);
+            // Outbox
+            stored.setStatus("PENDING");                  // estados: PENDING | DELIVERED | FAILED
+            stored.setAttempts(0);
+            stored.setNextAttemptAt(now);                 // intentar ya
+            stored.setMessageId(java.util.UUID.randomUUID().toString());
 
-            // (Opcional) persistir si corresponde:
-            // storedEvent = eventRepository.save(storedEvent);
+            stored = eventRepository.save(stored);
 
-            return storedEvent;
+            // Intento inmediato (si falla, queda PENDING para el scheduler)
+            publisherService.trySend(stored);
+
+            return stored;
 
         } catch (SecurityException se) {
-            // Propagamos para que el controller responda 401/403
             throw se;
         } catch (Exception e) {
             throw new RuntimeException("Error procesando evento", e);
@@ -163,14 +160,27 @@ public class EventService {
         long totalThisMonth = allEvents.stream().filter(inThisMonth).count();
         long totalLastMonth = allEvents.stream().filter(inLastMonth).count();
 
-        long deliveredThisMonth = allEvents.stream().filter(e -> "Delivered".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
-        long deliveredLastMonth = allEvents.stream().filter(e -> "Delivered".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
+        long deliveredThisMonth = allEvents.stream()
+                .filter(e -> e.getStatus() != null && e.getStatus().equalsIgnoreCase("DELIVERED") && inThisMonth.test(e))
+                .count();
+        long deliveredLastMonth = allEvents.stream()
+                .filter(e -> e.getStatus() != null && e.getStatus().equalsIgnoreCase("DELIVERED") && inLastMonth.test(e))
+                .count();
 
-        long failedThisMonth = allEvents.stream().filter(e -> "Failed".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
-        long failedLastMonth = allEvents.stream().filter(e -> "Failed".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
+        // contar pendientes tanto "InQueue" viejo como "PENDING" nuevo
+        Predicate<StoredEvent> isPending = e ->
+                e.getStatus() != null &&
+                (e.getStatus().equalsIgnoreCase("PENDING") || e.getStatus().equalsIgnoreCase("InQueue"));
 
-        long inQueueThisMonth = allEvents.stream().filter(e -> "InQueue".equalsIgnoreCase(e.getStatus()) && inThisMonth.test(e)).count();
-        long inQueueLastMonth = allEvents.stream().filter(e -> "InQueue".equalsIgnoreCase(e.getStatus()) && inLastMonth.test(e)).count();
+        long pendingThisMonth = allEvents.stream().filter(e -> isPending.test(e) && inThisMonth.test(e)).count();
+        long pendingLastMonth = allEvents.stream().filter(e -> isPending.test(e) && inLastMonth.test(e)).count();
+
+        long failedThisMonth = allEvents.stream()
+                .filter(e -> e.getStatus() != null && e.getStatus().equalsIgnoreCase("FAILED") && inThisMonth.test(e))
+                .count();
+        long failedLastMonth = allEvents.stream()
+                .filter(e -> e.getStatus() != null && e.getStatus().equalsIgnoreCase("FAILED") && inLastMonth.test(e))
+                .count();
 
         BiFunction<Long, Long, Integer> calcChange = (current, previous) -> {
             long difference = current - previous;
@@ -188,8 +198,8 @@ public class EventService {
                 Map.entry("deliveredChange", calcChange.apply(deliveredThisMonth, deliveredLastMonth)),
                 Map.entry("failed", failedThisMonth),
                 Map.entry("failedChange", calcChange.apply(failedThisMonth, failedLastMonth)),
-                Map.entry("inQueue", inQueueThisMonth),
-                Map.entry("inQueueChange", calcChange.apply(inQueueThisMonth, inQueueLastMonth))
+                Map.entry("pending", pendingThisMonth),
+                Map.entry("pendingChange", calcChange.apply(pendingThisMonth, pendingLastMonth))
         );
     }
 
