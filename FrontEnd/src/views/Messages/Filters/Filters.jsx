@@ -25,9 +25,12 @@ function Filters({ searchFilter, setSearchFilter, statusFilter, setStatusFilter,
                 onChange={(e) => setModuleFilter(e.target.value)}
                 options={[
                     { label: 'Every Module', value: '' },
-                    { label: 'User', value: 'User' },
-                    { label: 'Movie', value: 'Movie' },
-                    { label: 'Discovery', value: 'Discovery' }
+                    { label: 'Usuarios', value: 'Usuarios' },
+                    { label: 'Movies', value: 'Movies' },
+                    { label: 'Social', value: 'Social' },
+                    { label: 'Ratings', value: 'Ratings' },
+                    { label: 'Discovery', value: 'Discovery' },
+                    { label: 'Analytics', value: 'Analytics' }
                 ]}
             />
         </div>
