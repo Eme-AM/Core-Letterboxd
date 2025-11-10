@@ -1,6 +1,8 @@
 package com.example.CoreBack.service;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,7 +56,9 @@ class EventServiceTest {
     @Test
     @DisplayName("processIncomingEvent: evento válido -> persiste PENDING y llama trySend")
     void processIncomingEvent_withValidEvent_shouldPersistAndTrySend() throws Exception {
-        EventDTO validEventDTO = TestData.Events.validEventDTO(); // debe tener source = "/usuarios/api"
+        EventDTO validEventDTO = TestData.Events.validEventDTO();
+        validEventDTO.setSysDate(OffsetDateTime.now(ZoneOffset.UTC));
+
         String routingKey = "usuarios.usuario.created";
         String payloadJson = "{\"userId\":\"12345\",\"email\":\"user@example.com\"}";
 
@@ -62,11 +66,8 @@ class EventServiceTest {
         when(keyStore.isTypeAllowed(API_KEY, routingKey)).thenReturn(true);
         when(keyStore.sourceOf(API_KEY)).thenReturn(Optional.of(SOURCE_OK));
         when(objectMapper.writeValueAsString(any())).thenReturn(payloadJson);
-
-        // Dejar que save devuelva el mismo objeto con "id" set si lo necesitas
         when(eventRepository.save(any(StoredEvent.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        // no hacer nada en trySend
         doNothing().when(publisherService).trySend(any(StoredEvent.class));
 
         StoredEvent result = eventService.processIncomingEvent(validEventDTO, routingKey, API_KEY);
@@ -84,7 +85,6 @@ class EventServiceTest {
         verify(objectMapper).writeValueAsString(validEventDTO.getData());
         verify(eventRepository).save(any(StoredEvent.class));
 
-        // Capturar el evento que se intentó enviar
         ArgumentCaptor<StoredEvent> evCaptor = ArgumentCaptor.forClass(StoredEvent.class);
         verify(publisherService).trySend(evCaptor.capture());
         StoredEvent sent = evCaptor.getValue();
@@ -95,8 +95,10 @@ class EventServiceTest {
 
     @Test
     @DisplayName("processIncomingEvent rechaza si la apiKey es inválida")
-    void processIncomingEvent_withInvalidApiKey_shouldThrowSecurityException() throws Exception {
+    void processIncomingEvent_withInvalidApiKey_shouldThrowSecurityException() {
         EventDTO dto = TestData.Events.validEventDTO();
+        dto.setSysDate(OffsetDateTime.now(ZoneOffset.UTC));
+
         when(keyStore.isValidKey(API_KEY)).thenReturn(false);
 
         SecurityException ex = assertThrows(SecurityException.class, () ->
@@ -110,8 +112,10 @@ class EventServiceTest {
 
     @Test
     @DisplayName("processIncomingEvent rechaza si el routingKey no está autorizado")
-    void processIncomingEvent_withForbiddenRoutingKey_shouldThrowSecurityException() throws Exception {
+    void processIncomingEvent_withForbiddenRoutingKey_shouldThrowSecurityException() {
         EventDTO dto = TestData.Events.validEventDTO();
+        dto.setSysDate(OffsetDateTime.now(ZoneOffset.UTC));
+
         when(keyStore.isValidKey(API_KEY)).thenReturn(true);
         when(keyStore.isTypeAllowed(API_KEY, "movies.movie.created")).thenReturn(false);
 
@@ -126,8 +130,9 @@ class EventServiceTest {
 
     @Test
     @DisplayName("processIncomingEvent rechaza si el source no coincide con la key")
-    void processIncomingEvent_withMismatchedSource_shouldThrowSecurityException() throws Exception {
-        EventDTO dto = TestData.Builder.event().withSource("/movies/api").build();
+    void processIncomingEvent_withMismatchedSource_shouldThrowSecurityException() {
+        EventDTO dto = TestData.Builder.event().withSource("/movies/api")
+                .withSysDate(OffsetDateTime.now(ZoneOffset.UTC)).build();
 
         when(keyStore.isValidKey(API_KEY)).thenReturn(true);
         when(keyStore.isTypeAllowed(API_KEY, "usuarios.usuario.created")).thenReturn(true);
@@ -145,7 +150,11 @@ class EventServiceTest {
     @Test
     @DisplayName("processIncomingEvent usa fecha actual cuando sysDate es nulo y llama trySend")
     void processIncomingEvent_withNullSysDate_shouldUseCurrentTime_AndTrySend() throws Exception {
-        EventDTO dto = TestData.Builder.event().withSysDate(null).withSource(SOURCE_OK).build();
+        EventDTO dto = TestData.Builder.event()
+                .withSysDate((OffsetDateTime) null)
+                .withSource(SOURCE_OK)
+                .build();
+
         String routingKey = "usuarios.usuario.updated";
 
         when(keyStore.isValidKey(API_KEY)).thenReturn(true);
@@ -168,7 +177,11 @@ class EventServiceTest {
     @Test
     @DisplayName("processIncomingEvent maneja error de serialización JSON (lanza RuntimeException)")
     void processIncomingEvent_withJsonSerializationError_shouldThrowRuntimeException() throws Exception {
-        EventDTO dto = TestData.Builder.event().withSource(SOURCE_OK).build();
+        EventDTO dto = TestData.Builder.event()
+                .withSource(SOURCE_OK)
+                .withSysDate(OffsetDateTime.now(ZoneOffset.UTC))
+                .build();
+
         String routingKey = "usuarios.usuario.created";
         JsonProcessingException jsonEx = new JsonProcessingException("JSON error") {};
 
@@ -187,11 +200,7 @@ class EventServiceTest {
         verify(eventRepository, never()).save(any());
     }
 
-    // IMPORTANTE: Ya no probamos que "falle si el publisher falla".
-    // Con outbox, trySend captura el error interno de Rabbit y programa reintento.
-    // Por lo tanto, processIncomingEvent NO debe lanzar excepción si Rabbit está caído.
-
-    // --- El resto de tests (getAllEvents, getGlobalStats, getEvolution, getEventsPerModule) quedan igual ---
+    // --- Otros tests (getAllEvents, getGlobalStats, etc.) ---
 
     @Test
     @DisplayName("getAllEvents debe filtrar y paginar eventos correctamente")
@@ -227,7 +236,7 @@ class EventServiceTest {
             createStoredEventWithDate("event1", "source1", "Delivered", thisMonth),
             createStoredEventWithDate("event2", "source2", "Failed", thisMonth),
             createStoredEventWithDate("event3", "source3", "Delivered", lastMonth),
-            createStoredEventWithDate("event4", "source4", "InQueue", thisMonth) // tu servicio usa estos labels en stats
+            createStoredEventWithDate("event4", "source4", "InQueue", thisMonth)
         );
 
         when(eventRepository.findAll()).thenReturn(mockEvents);
@@ -249,6 +258,7 @@ class EventServiceTest {
     private StoredEvent createStoredEvent(String type, String source, String status) {
         return createStoredEventWithDate(type, source, status, LocalDateTime.now());
     }
+
     private StoredEvent createStoredEventWithDate(String type, String source, String status, LocalDateTime occurredAt) {
         StoredEvent ev = new StoredEvent();
         ev.setEventType(type);

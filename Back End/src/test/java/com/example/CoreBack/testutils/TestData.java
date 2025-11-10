@@ -1,5 +1,7 @@
 package com.example.CoreBack.testutils;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -16,6 +18,8 @@ import org.springframework.security.web.SecurityFilterChain;
 public class TestData {
     
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final OffsetDateTime NOW = OffsetDateTime.now(ZoneOffset.UTC);
+    
     public static class Events {
         
         private static EventDTO createEvent(String type, String source, Map<String, Object> data) {
@@ -23,7 +27,7 @@ public class TestData {
             event.setType(type);
             event.setSource(source);
             event.setDatacontenttype("application/json");
-            event.setSysDate(LocalDateTime.now());
+            event.setSysDate(NOW);
             event.setData(data);
             return event;
         }
@@ -64,7 +68,7 @@ public class TestData {
             event.setType("complex.action");
             event.setSource("/complex/action");
             event.setDatacontenttype("application/json");
-            event.setSysDate(LocalDateTime.now());
+            event.setSysDate(NOW);
             
             // Create complex data map matching original EventTestDataFactory
             Map<String, Object> complexData = new HashMap<>();
@@ -87,12 +91,10 @@ public class TestData {
         }
         
         public static EventDTO invalidEvent() {
-            EventDTO event = new EventDTO();
-            // Intentionally leave required fields null
-            return event;
+            return new EventDTO(); // campos nulos a propósito
         }
         
-        // STORED EVENTS - StoredEvent creation methods
+        // ===== STORED EVENTS =====
         
         private static StoredEvent createStoredEvent(String type, String source, Map<String, Object> payload) {
             StoredEvent event = new StoredEvent(type, source, "application/json", mapToJson(payload), LocalDateTime.now());
@@ -146,10 +148,9 @@ public class TestData {
         }
     }
     
-    // SECURITY NAMESPACE - Security configurations for tests  
+    // ===== SECURITY (para tests) =====
     
     public static class Security {
-        
         public static SecurityFilterChain permitAllFilterChain(HttpSecurity http) throws Exception {
             return http
                 .authorizeHttpRequests(authz -> authz.anyRequest().permitAll())
@@ -158,20 +159,14 @@ public class TestData {
         }
     }
     
-    // BUILDER NAMESPACE - Fluent builder patterns
+    // ===== BUILDER NAMESPACE =====
     
     public static class Builder {
-        
-        public static EventBuilder event() {
-            return new EventBuilder();
-        }
-        
-        public static EventBuilder anEvent() {
-            return new EventBuilder();
-        }
+        public static EventBuilder event() { return new EventBuilder(); }
+        public static EventBuilder anEvent() { return new EventBuilder(); }
     }
     
-    // UTILITY METHODS
+    // ===== UTILS =====
     
     private static String mapToJson(Map<String, Object> map) {
         try {
@@ -181,28 +176,44 @@ public class TestData {
         }
     }
     
-    // INNER BUILDER CLASSES
+    // ===== INNER BUILDER CLASSES =====
     
     public static class EventBuilder {
         private EventDTO event = new EventDTO();
         private final Map<String, Object> dataMap = new HashMap<>();
         
         public EventBuilder withType(String eventType) { this.event.setType(eventType); return this; }
-        public EventBuilder withId(String id) { return this; } // No-op for compatibility
+        public EventBuilder withId(String id) { return this; } // no-op
         public EventBuilder withSource(String source) { this.event.setSource(source); return this; }
         public EventBuilder withDataContentType(String dataContentType) { this.event.setDatacontenttype(dataContentType); return this; }
-        public EventBuilder withSysDate(LocalDateTime sysDate) { this.event.setSysDate(sysDate); return this; }
+        
+        public EventBuilder withSysDate(OffsetDateTime sysDate) { this.event.setSysDate(sysDate); return this; }
+        public EventBuilder withSysDate(LocalDateTime ldt) { this.event.setSysDate(ldt.atOffset(ZoneOffset.UTC)); return this; }
+        
         public EventBuilder withData(String key, Object value) { this.dataMap.put(key, value); return this; }
         public EventBuilder withDataField(String key, Object value) { this.dataMap.put(key, value); return this; }
         
         public EventBuilder asUserCreated(Long userId, String email, String username) {
-            event.setType("user.created"); event.setSource("/users/signup"); event.setDatacontenttype("application/json"); event.setSysDate(LocalDateTime.now());
-            dataMap.put("userId", userId); dataMap.put("email", email); dataMap.put("username", username);
+            event.setType("user.created");
+            event.setSource("/users/signup");
+            event.setDatacontenttype("application/json");
+            event.setSysDate(NOW);
+            dataMap.put("userId", userId);
+            dataMap.put("email", email);
+            dataMap.put("username", username);
             return this;
         }
         
-        public EventBuilder asInvalid() { this.event = new EventDTO(); this.dataMap.clear(); return this; }
-        public EventDTO build() { if (!dataMap.isEmpty()) event.setData(new HashMap<>(dataMap)); return event; }
+        public EventBuilder asInvalid() {
+            this.event = new EventDTO();
+            this.dataMap.clear();
+            return this;
+        }
+        
+        public EventDTO build() {
+            if (!dataMap.isEmpty()) event.setData(new HashMap<>(dataMap));
+            return event;
+        }
     }
     
     public static class StoredEventBuilder {
