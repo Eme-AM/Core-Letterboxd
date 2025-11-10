@@ -102,7 +102,6 @@ function EventDetails({ event, onClose }) {
           </button>
         </div>
 
-        {/* Content */}
         <div
           className={`modal-content bg-content  ${activeTab === "details" ? "grid-2col" : ""
             }
@@ -110,7 +109,6 @@ function EventDetails({ event, onClose }) {
         >
           {activeTab === "details" && (
             <>
-              {/* Columna izquierda */}
               <div className="row">
                 <span className="label">Event’s ID</span>
                 <span className="value">{event.id}</span>
@@ -124,7 +122,6 @@ function EventDetails({ event, onClose }) {
                 <span className="value">{toCapitalizeCase(event.status)}</span>
               </div>
 
-              {/* Columna derecha */}
               <div className="row">
                 <span className="label">Type</span>
                 <span className="value">{event.eventType}</span>

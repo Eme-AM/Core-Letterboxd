@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Dashboard.scss';
 import MetricCard from '../components/MetricCard';
@@ -37,8 +36,7 @@ const toPercent = (v) => {
 };
 
 function Dashboard() {
-  const navigate = useNavigate();
-  const { user, isLoading: isAuthLoading } = useAuth();
+  const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null); 
   const [events, setEvents] = useState([]);
@@ -47,15 +45,7 @@ function Dashboard() {
   const [stats, setStats] = useState([]);
 
   useEffect(() => {
-    if (!isAuthLoading && !user) {
-      navigate('/login', { replace: true });
-    }
-  }, [user, isAuthLoading, navigate]);
-
-  useEffect(() => {
-    if (isAuthLoading || !user) {
-      return;
-    }
+    if (!user) return;
 
     api
       .get(`events/stats`)
@@ -117,18 +107,7 @@ function Dashboard() {
       .catch(err => {
         console.error('Error fetching recent events:', err);
       });
-  }, [isAuthLoading, user]);
-
-  if (isAuthLoading) {
-    return (
-      <div className="dashboard-container">
-        <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
-        <main className={`dashboard-main ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
-          <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>
-        </main>
-      </div>
-    );
-  }
+  }, [user]);
 
   if (!user) {
     return null;
