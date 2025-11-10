@@ -2,6 +2,7 @@ package com.example.CoreBack;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Contact;
@@ -28,6 +29,7 @@ import io.swagger.v3.oas.annotations.servers.Server;
         @Server(description = "Ambiente Prod", url = "https://api.com")
     }
 )
+@EnableScheduling
 @SpringBootApplication
 public class CoreBackApplication {
 

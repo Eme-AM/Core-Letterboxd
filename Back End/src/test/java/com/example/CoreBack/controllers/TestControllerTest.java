@@ -2,67 +2,66 @@ package com.example.CoreBack.controllers;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
+
+import org.mockito.ArgumentCaptor;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.example.CoreBack.entity.StoredEvent;
 import com.example.CoreBack.service.EventPublisherService;
 
 /**
  * Tests unitarios para TestController
- * 
- * Verifica el endpoint de prueba para eventos
+ * Verifica el endpoint de prueba para eventos con outbox
  */
 @WebMvcTest(TestController.class)
-@Import(TestControllerTest.TestConfig.class)
+@AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
 class TestControllerTest {
-
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        @Primary
-        public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-            http.authorizeHttpRequests(authz -> authz.anyRequest().permitAll())
-                .csrf(csrf -> csrf.disable());
-            return http.build();
-        }
-    }
 
     @Autowired
     private MockMvc mockMvc;
-    
+
     @MockitoBean
     private EventPublisherService eventPublisherService;
 
     @Test
     @DisplayName("GET /test debe enviar evento de prueba correctamente")
     void sendTestEvent_ShouldWork() throws Exception {
-        // Given - usar Object.class en lugar de EventMessage para evitar problemas de classpath en IDE
-        doNothing().when(eventPublisherService).publish(any(Object.class), anyString());
+        // Stub: no hacer nada al intentar enviar
+        doNothing().when(eventPublisherService).trySend(any(StoredEvent.class));
 
         // When & Then
         mockMvc.perform(get("/test"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.TEXT_PLAIN_VALUE + ";charset=UTF-8"))
-                .andExpect(content().string("Evento enviado 🚀"));
+               .andExpect(status().isOk())
+               // Mejor compatible por si no incluye charset explícito
+               .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_PLAIN))
+               .andExpect(content().string("Evento enviado 🚀"));
 
-        // Verify que se publica el evento con routing key correcto
-        verify(eventPublisherService).publish(any(Object.class), eq("event.pelicula"));
+        // Capturar el StoredEvent enviado y validar la routingKey
+        ArgumentCaptor<StoredEvent> captor = ArgumentCaptor.forClass(StoredEvent.class);
+        verify(eventPublisherService).trySend(captor.capture());
+
+        StoredEvent sent = captor.getValue();
+        assertThat(sent).isNotNull();
+        assertThat(sent.getRoutingKey()).isEqualTo("event.pelicula");
+        assertThat(sent.getStatus()).isEqualTo("PENDING");   // lo setea el controller
+        assertThat(sent.getPayload()).isEqualTo("{\"ping\":\"ok\"}");
+        assertThat(sent.getContentType()).isEqualTo("application/json");
     }
 }

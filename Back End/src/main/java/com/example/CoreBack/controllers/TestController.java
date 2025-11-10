@@ -1,46 +1,48 @@
 package com.example.CoreBack.controllers;
 
-import com.example.CoreBack.model.EventMessage;
-import com.example.CoreBack.service.EventPublisherService;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import com.example.CoreBack.entity.StoredEvent;
+import com.example.CoreBack.service.EventPublisherService;
 
-import java.util.Map;
-
+/**
+ * Controlador de prueba
+ * 
+ * Permite enviar un evento de ejemplo a RabbitMQ para verificar
+ * que el outbox y el reintento automático estén funcionando.
+ */
 @RestController
 public class TestController {
 
-    private final EventPublisherService eventPublisher;
+    private final EventPublisherService publisherService;
 
-    public TestController(EventPublisherService eventPublisher) {
-        this.eventPublisher = eventPublisher;
+    public TestController(EventPublisherService publisherService) {
+        this.publisherService = publisherService;
     }
 
-    @Operation(
-        summary = "Enviar evento de prueba",
-        description = "Publica un evento de prueba con datos simulados en la cola de mensajería.",
-        tags = { "Test" }
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Evento de prueba enviado correctamente."),
-        @ApiResponse(responseCode = "500", description = "Error al enviar el evento de prueba.")
-    })
     @GetMapping("/test")
-    public String sendTestEvent() {
-        EventMessage event = new EventMessage();
-        event.setSource("peliculas");
-        event.setEventType("PELICULA_ACTUALIZADA");
-        event.setPayload(Map.of(
-                "titulo", "Rapidos y Furiosos",
-                "año", 2003
-        ));
+    public ResponseEntity<String> sendTestEvent() {
+        // Creamos un evento ficticio (no necesita API Key)
+        StoredEvent ev = new StoredEvent();
+        ev.setEventType("pelicula.created");
+        ev.setSource("/test");
+        ev.setContentType("application/json");
+        ev.setPayload("{\"ping\":\"ok\"}");
+        ev.setOccurredAt(LocalDateTime.now());
+        ev.setRoutingKey("event.pelicula");
+        ev.setStatus("PENDING");
+        ev.setAttempts(0);
+        ev.setNextAttemptAt(LocalDateTime.now());
+        ev.setMessageId(UUID.randomUUID().toString());
 
-        eventPublisher.publish(event, "event.pelicula");
-        return "Evento enviado 🚀";
+        // Publica el evento (si Rabbit está apagado, queda pendiente)
+        publisherService.trySend(ev);
+
+        return ResponseEntity.ok("Evento enviado 🚀");
     }
 }
-
