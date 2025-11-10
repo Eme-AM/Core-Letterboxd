@@ -13,12 +13,12 @@ import "./Sidebar.css";
 
 function Sidebar({ isOpen, setIsOpen }) {
   const location = useLocation();
-  const { user } = useAuth();
-  const toggleSidebar = () => setIsOpen(!isOpen);
-  const logout = () => {
+  const { user, logout } = useAuth();
+  const toggleSidebar = () => setIsOpen(!isOpen); 
+  /*const logout = () => {
     localStorage.removeItem("access_token");
     window.location.href = "/";
-  };
+  };*/
   const menuItems = [
     { name: "Dashboard", path: "/", icon: LayoutDashboard },
     { name: "Messages", path: "/messages", icon: MessageSquare },
