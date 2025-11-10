@@ -48,14 +48,15 @@ public class EventService {
     // ================================
     public StoredEvent processIncomingEvent(@Valid EventDTO eventDTO, String routingKey, String apiKey) {
         try {
-            // ----- AUTORIZACIÓN -----
+            // ===== AUTORIZACIÓN =====
             if (apiKey == null || !keyStore.isValidKey(apiKey)) {
                 throw new SecurityException("Missing or invalid X-API-KEY");
             }
             if (!keyStore.isTypeAllowed(apiKey, routingKey)) {
                 throw new SecurityException("API Key no autorizada para el routingKey=" + routingKey);
             }
-            // (Opcional) validar source contra la key
+    
+            // Validar source según API Key (si aplica)
             if (eventDTO.getSource() != null) {
                 String expectedSource = keyStore.sourceOf(apiKey).orElse(null);
                 if (expectedSource != null && !expectedSource.equals(eventDTO.getSource())) {
@@ -63,21 +64,33 @@ public class EventService {
                             + expectedSource + ", got=" + eventDTO.getSource() + ")");
                 }
             }
-
-            // ----- ARMAR StoredEvent -----
+    
+            // ===== SERIALIZAR PAYLOAD =====
             String payloadJson = objectMapper.writeValueAsString(eventDTO.getData());
             LocalDateTime now = LocalDateTime.now();
-            LocalDateTime sysDate = eventDTO.getSysDate() != null
-        ? eventDTO.getSysDate().toLocalDateTime()
-        : null;
-
-
-            // Ventana de aceptación: [now-1d, now+5m]
-            LocalDateTime occurredAt = (sysDate != null &&
-                    !sysDate.isAfter(now.plusMinutes(5)) &&
-                    !sysDate.isBefore(now.minusDays(1)))
-                    ? sysDate : now;
-
+    
+            // ===== MANEJO SEGURO DE sysDate =====
+            LocalDateTime sysDate = null;
+            try {
+                if (eventDTO.getSysDate() != null) {
+                    sysDate = eventDTO.getSysDate().toLocalDateTime();
+                }
+            } catch (Exception ex) {
+                // Si vino con formato inválido o sin zona, asumimos null (se tomará como now)
+                sysDate = null;
+            }
+    
+            // Ventana de aceptación: entre ahora -1 día y ahora +5 min
+            LocalDateTime occurredAt;
+            if (sysDate != null &&
+                !sysDate.isAfter(now.plusMinutes(5)) &&
+                !sysDate.isBefore(now.minusDays(1))) {
+                occurredAt = sysDate; // dentro de ventana → respetamos
+            } else {
+                occurredAt = now; // fuera de ventana → normalizamos
+            }
+    
+            // ===== CREAR StoredEvent =====
             StoredEvent stored = new StoredEvent();
             stored.setEventType(eventDTO.getType());
             stored.setSource(eventDTO.getSource());
@@ -85,26 +98,32 @@ public class EventService {
             stored.setPayload(payloadJson);
             stored.setRoutingKey(routingKey);
             stored.setOccurredAt(occurredAt);
-
-            // Outbox
-            stored.setStatus("PENDING");                  // estados: PENDING | DELIVERED | FAILED
+    
+            // Outbox pattern
+            stored.setStatus("PENDING");
             stored.setAttempts(0);
-            stored.setNextAttemptAt(now);                 // intentar ya
+            stored.setNextAttemptAt(now);
             stored.setMessageId(java.util.UUID.randomUUID().toString());
-
+    
+            // Guardar en base
             stored = eventRepository.save(stored);
-
-            // Intento inmediato (si falla, queda PENDING para el scheduler)
-            publisherService.trySend(stored);
-
+    
+            // Intento inmediato de envío a Rabbit (si falla, scheduler reintenta)
+            try {
+                publisherService.trySend(stored);
+            } catch (Exception ex) {
+                // No romper el flujo: el scheduler se encargará del reintento
+            }
+    
             return stored;
-
+    
         } catch (SecurityException se) {
             throw se;
         } catch (Exception e) {
             throw new RuntimeException("Error procesando evento", e);
         }
     }
+    
 
     // 🔍 Listar con filtros
     public Map<String, Object> getAllEvents(int page, int size, String module, String status, String search) {

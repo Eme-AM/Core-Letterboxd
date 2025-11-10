@@ -121,8 +121,8 @@ public class EventController {
             envelope.setSysDate(eventDTO.getSysDate()); // EventDTO.sysDate es OffsetDateTime
             envelope.setData(mapper.valueToTree(eventDTO.getData()));
 
-            biz.validateSkew(envelope);
-            biz.validateTypeSourceConsistency(envelope);
+           
+            
             // ========================================================
 
             StoredEvent stored = eventService.processIncomingEvent(eventDTO, routingKey, apiKey);
