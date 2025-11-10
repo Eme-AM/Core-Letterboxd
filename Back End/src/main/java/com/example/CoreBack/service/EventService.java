@@ -46,15 +46,13 @@ public class EventService {
     // Procesa y publica evento
     public StoredEvent processIncomingEvent(@Valid EventDTO eventDTO, String routingKey, String apiKey) {
         try {
-            // ---------- AUTORIZACIÓN ----------
+            // ----- autorización (igual que ahora) -----
             if (apiKey == null || !keyStore.isValidKey(apiKey)) {
                 throw new SecurityException("Missing or invalid X-API-KEY");
             }
-            // Autoriza por dominio usando routingKey (ej: "usuarios.usuario.created")
             if (!keyStore.isTypeAllowed(apiKey, routingKey)) {
                 throw new SecurityException("API Key no autorizada para el routingKey=" + routingKey);
             }
-            // (Opcional) Si viene source en el body, debe coincidir con la key
             if (eventDTO.getSource() != null) {
                 String expectedSource = keyStore.sourceOf(apiKey).orElse(null);
                 if (expectedSource != null && !expectedSource.equals(eventDTO.getSource())) {
@@ -62,50 +60,42 @@ public class EventService {
                         + expectedSource + ", got=" + eventDTO.getSource() + ")");
                 }
             }
-            // ---------- TU LÓGICA ORIGINAL ----------
-            String type = eventDTO.getType();
-            String source = eventDTO.getSource();
-            String contentType = eventDTO.getDatacontenttype();
-
+    
+            // ----- armar StoredEvent -----
             String payloadJson = objectMapper.writeValueAsString(eventDTO.getData());
-
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime sysDate = eventDTO.getSysDate();
-
-            LocalDateTime occurredAt;
-            if (sysDate != null &&
+    
+            LocalDateTime occurredAt = (sysDate != null &&
                 !sysDate.isAfter(now.plusMinutes(5)) &&
-                !sysDate.isBefore(now.minusDays(1))) {
-                occurredAt = sysDate;
-            } else {
-                occurredAt = now;
-            }
-
-            StoredEvent storedEvent = new StoredEvent(
-                    type,
-                    source,
-                    contentType,
-                    payloadJson,
-                    occurredAt
-            );
-
-            storedEvent.setStatus("InQueue");
-
-            // Publicar a Rabbit desde el service (como ya tenías)
-            publisherService.publish(eventDTO, routingKey);
-
-            // (Opcional) persistir si corresponde:
-            // storedEvent = eventRepository.save(storedEvent);
-
-            return storedEvent;
-
+                !sysDate.isBefore(now.minusDays(1))) ? sysDate : now;
+    
+            StoredEvent stored = new StoredEvent();
+            stored.setEventType(eventDTO.getType());
+            stored.setSource(eventDTO.getSource());
+            stored.setContentType(eventDTO.getDatacontenttype());
+            stored.setPayload(payloadJson);
+            stored.setRoutingKey(routingKey);
+            stored.setOccurredAt(occurredAt);
+            stored.setStatus("PENDING");
+            stored.setAttempts(0);
+            stored.setNextAttemptAt(now); // intentar ya
+            stored.setMessageId(java.util.UUID.randomUUID().toString());
+    
+            stored = eventRepository.save(stored);
+    
+            // Intento inmediato "best effort" (si falla, queda PENDING para el scheduler)
+            publisherService.trySend(stored);
+    
+            return stored;
+    
         } catch (SecurityException se) {
-            // Propagamos para que el controller responda 401/403
             throw se;
         } catch (Exception e) {
             throw new RuntimeException("Error procesando evento", e);
         }
     }
+    
 
 
     // 🔍 Listar con filtros
