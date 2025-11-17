@@ -1,7 +1,7 @@
 import styles from './Input.module.scss';
 import search from '../../assets/search.png';
 
-export const Input = ({ placeholder = "Search by ID, type, origin, destination...", onChange, value, onKeyDown, isSearch }) => {
+export const Input = ({ placeholder = "Search by type, origin, date...", onChange, value, onKeyDown, isSearch }) => {
   return (
     <div className={styles.wrapper}>
       <input

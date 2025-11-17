@@ -95,12 +95,12 @@ public class EventService {
             publisherService.publish(eventDTO, routingKey);
 
             // (Opcional) persistir si corresponde:
-            // storedEvent = eventRepository.save(storedEvent);
+            storedEvent = eventRepository.save(storedEvent);
 
             return storedEvent;
 
         } catch (SecurityException se) {
-            // Propagamos para que el controller responda 401/403
+            
             throw se;
         } catch (Exception e) {
             throw new RuntimeException("Error procesando evento", e);

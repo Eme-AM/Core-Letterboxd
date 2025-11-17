@@ -1,23 +1,67 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import {
   ChevronRight,
   ChevronLeft,
   LayoutDashboard,
   MessageSquare,
   Settings,
+  LogOut
 } from "lucide-react";
 import "./Sidebar.css";
 
 function Sidebar({ isOpen, setIsOpen }) {
   const location = useLocation();
-  const toggleSidebar = () => setIsOpen(!isOpen);
-
+  const { user, logout } = useAuth();
+  const toggleSidebar = () => setIsOpen(!isOpen); 
+  /*const logout = () => {
+    localStorage.removeItem("access_token");
+    window.location.href = "/";
+  };*/
   const menuItems = [
     { name: "Dashboard", path: "/", icon: LayoutDashboard },
     { name: "Messages", path: "/messages", icon: MessageSquare },
     { name: "Configuration", path: "/configuration", icon: Settings },
+    { name: "Logout", path: "", icon: LogOut },
   ];
+
+  const getUserInitials = () => {
+    if (!user) return "A";
+
+    if (user.name) {
+      return user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .substring(0, 2);
+    }
+
+    if (user.username) {
+      return user.username.substring(0, 2).toUpperCase();
+    }
+
+    if (user.email) {
+      return user.email.substring(0, 2).toUpperCase();
+    }
+
+    return "U";
+  };
+
+  const getUserName = () => {
+    if (!user) return "User";
+    return user.name || user.username || user.email || "User";
+  };
+
+  const getUserAvatar = () => {
+    if (user?.avatar || user?.profile_picture || user?.image) {
+      return user.avatar || user.profile_picture || user.image;
+    }
+    return null;
+  };
+
+  const avatarUrl = getUserAvatar();
 
   return (
     <aside className={`sidebar ${isOpen ? "open" : "collapsed"}`}>
@@ -31,8 +75,6 @@ function Sidebar({ isOpen, setIsOpen }) {
           )}
         </button>
       </div>
-      {/*
-      <div className="sidebar-divider" /> */}
 
       <nav className="sidebar-menu">
         {menuItems.map((item) => {
@@ -43,6 +85,11 @@ function Sidebar({ isOpen, setIsOpen }) {
               key={item.name}
               to={item.path}
               className={`sidebar-item ${isActive ? "active" : ""}`}
+              onClick={() => {
+                if (item.name === "Logout") {
+                  logout(); // tu función para cerrar sesión
+                }
+              }}
             >
               <div className="sidebar-icon">
                 <Icon size={22} />
@@ -52,13 +99,20 @@ function Sidebar({ isOpen, setIsOpen }) {
           );
         })}
       </nav>
-      {/* 
-      <div className="sidebar-divider" />
-      */}
-      <div className="sidebar-user">
 
-        <div className="sidebar-user-avatar">A</div>
-        {isOpen && <span className="sidebar-user-name">Admin User</span>}
+      <div className="sidebar-user">
+        <div className="sidebar-user-avatar">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={getUserName()}
+              className="sidebar-user-image"
+            />
+          ) : (
+            getUserInitials()
+          )}
+        </div>
+        {isOpen && <span className="sidebar-user-name">{getUserName()}</span>}
       </div>
     </aside>
   );

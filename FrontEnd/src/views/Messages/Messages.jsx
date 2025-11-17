@@ -25,17 +25,17 @@ function Messages() {
   const [totalPages, setTotalPages] = useState(1);
 
 
-/*
-  const headers = [
-    "ID",
-    "Event Type",
-    "Origin",
-    //"Destination",
-    "State",
-    "Date/Time",
-    "Details"
-  ];
-*/
+  /*
+    const headers = [
+      "ID",
+      "Event Type",
+      "Origin",
+      //"Destination",
+      "State",
+      "Date/Time",
+      "Details"
+    ];
+  */
   /*const events = [
     {
       id: "evt_0005",
@@ -83,22 +83,26 @@ function Messages() {
   ];*/
 
   useEffect(() => {
+    const controller = new AbortController();
+
     api
-      //.get("events?page=0&size=5&module=movies&search=inception")
-      .get(`events?module=${moduleFilter}&search=${searchFilter}${statusFilter ? `&status=${statusFilter}` : ''}`)
+      .get(`events?module=${moduleFilter}&search=${searchFilter}${statusFilter ? `&status=${statusFilter}` : ''}`, {
+        signal: controller.signal
+      })
       .then(res => {
         if (res.data) {
           setEvents(res.data.events);
           setTotalPages(Math.ceil(res.data.total / 10));
-          setPage(0)
+          setPage(0);
         }
       })
-     /* .catch(err => {
-        //setError("No se pudieron cargar los eventos.");
-      })
-      .finally(() => {
-        //setLoading(false);
-      });*/
+      .catch(err => {
+        if (err.name !== "CanceledError") {
+          console.error(err);
+        }
+      });
+
+    return () => controller.abort();
   }, [moduleFilter, searchFilter, statusFilter]);
 
   useEffect(() => {
@@ -111,12 +115,12 @@ function Messages() {
           setTotalPages(Math.ceil(res.data.total / 10));
         }
       })
-      /*.catch(err => {
-        //setError("No se pudieron cargar los eventos.");
-      })
-      .finally(() => {
-        //setLoading(false);
-      });*/
+    /*.catch(err => {
+      //setError("No se pudieron cargar los eventos.");
+    })
+    .finally(() => {
+      //setLoading(false);
+    });*/
   }, [page]);
 
   /*const filteredEvents = events.filter(event => {
