@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
-import { useAuth } from '../contexts/AuthContext';
 import './Login.scss';
 import appLogo from '../assets/App Logo.png';
 
@@ -11,7 +9,6 @@ function Login() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
-    const { login } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -28,7 +25,7 @@ function Login() {
             formData.append('client_secret', '');
 
             const response = await fetch(
-                'https://usuariosbe.cine-track.com.ar/api/v1/auth/login',
+                'http://users-prod-alb-1703954385.us-east-1.elb.amazonaws.com/api/v1/auth/login',
                 {
                     method: 'POST',
                     headers: {
@@ -44,21 +41,15 @@ function Login() {
             }
 
             const data = await response.json();
-            const decodedToken = jwtDecode(data.access_token);
-            const userRole = decodedToken.role || decodedToken.user_role || decodedToken.roles;
-
-            if (userRole !== 'admin') {
-                throw new Error('Acceso denegado. Solo los administradores pueden acceder.');
-            }
-
+            
+            // Guardar el token en localStorage
+            localStorage.setItem('access_token', data.access_token);
             if (data.refresh_token) {
                 localStorage.setItem('refresh_token', data.refresh_token);
             }
 
-            login(decodedToken, data.access_token);
             navigate('/');
         } catch (error) {
-            console.error('Error al iniciar sesión:', error);
             setError(error.message || 'Error al iniciar sesión');
         } finally {
             setLoading(false);
@@ -98,12 +89,19 @@ function Login() {
                         />
                     </div>
 
+                    <a href="#" className="forgot-password">Olvidé mi contraseña</a>
+
                     <button type="submit" className="login-button" disabled={loading}>
                         {loading ? 'INICIANDO SESIÓN...' : 'INICIAR SESIÓN'}
                     </button>
 
                     {error && <p className="error-message">{error}</p>}
                 </form>
+
+                <div className="register-section">
+                    <p className="register-text">¿No tienes una cuenta?</p>
+                    <a href="#" className="register-link">Regístrate ya!</a>
+                </div>
             </div>
         </div>
     );

@@ -5,8 +5,7 @@ function StateTag({ state = "InQueue" }) {
 
   const labels = {
     "InQueue": "queue",
-    Delivered: "delivered",
-    DELIVERED: "delivered",
+    delivered: "delivered",
     FAILED: "failed",
     Enabled: "delivered",
     Disabled: "failed",
