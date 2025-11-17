@@ -1,7 +1,7 @@
 import ContainerSection from '../../components/ContainerSection/ContainerSection';
 import { useEffect, useState } from 'react';
 import Sidebar from '../../components/Sidebar';
-//import EventDetails from '../../components/EventDetails';
+import EventDetails from '../../components/EventDetails';
 import styles from "./Configuration.module.scss";
 import HeaderSection from '../../components/HeaderPage/HeaderPage';
 import Policy from './Policy/Policy';
@@ -9,16 +9,16 @@ import Table from '../../components/Table/Table';
 import edit from '../../assets/edit.png';
 import deleteIcon from '../../assets/delete.png';
 import StateTag from '../../components/StateTag/StateTag';
-//import SwitcherSection from './SwitcherSection/SwitcherSection';
+import SwitcherSection from './SwitcherSection/SwitcherSection';
 import GeneralConfiguration from './GeneralConfiguration/GeneralConfiguration';
-//import { SelectInput } from '../../components/SelectInput/SelectInput';
+import { SelectInput } from '../../components/SelectInput/SelectInput';
 import ConfirmDeleteModal from '../../components/ConfirmDeleteModal/ConfirmDeleteModal';
 import api from '../../axios';
 import { toast } from 'react-toastify';
 
 function Configuration() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    //const [showPolicies, setShowPolicies] = useState(true);
+    const [showPolicies, setShowPolicies] = useState(true);
     const [deletePolicy, setDeletePolicy] = useState(null);
     const [contReload, setContReload] = useState(0);
 
@@ -44,7 +44,7 @@ function Configuration() {
             enabled: true
         }
     ]);
-   /* const [modules, setModules] = useState([
+    const [modules, setModules] = useState([
         {
             name: 'Movies',
             policy: 1
@@ -56,7 +56,7 @@ function Configuration() {
         {
             name: 'Users'
         }
-    ]);*/
+    ]);
 
     useEffect(() => {
         api
@@ -73,7 +73,7 @@ function Configuration() {
                  //setLoading(false);
              });*/
     }, [contReload]);
-/*
+
     const handlePolicyChange = (index, newValue) => {
         //Call Back
         setModules(prevModules =>
@@ -81,7 +81,7 @@ function Configuration() {
                 m.name === index ? { ...m, policy: newValue || undefined } : m
             )
         );
-    };*/
+    };
 
     const handleDelete = () => {
         api
@@ -112,9 +112,9 @@ function Configuration() {
             <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
             <main className={`dashboard-main ${isSidebarOpen ? "sidebar-open" : "sidebar-collapsed"}`}>
                 <HeaderSection title={'Configuration'} subtitle={'Monitoring & Management system’s events in real time'} />
-                {/*<SwitcherSection value={showPolicies} onChange={setShowPolicies} />
+                <SwitcherSection value={showPolicies} onChange={setShowPolicies} />
                 {showPolicies ? (
-                    <>*/}
+                    <>
                         <Policy policy={policy} setPolicy={setPolicy} reloadPolicies={reloadPolicies} />
                         <ContainerSection title={'Existing Policies'} subtitle={"Events along the system’s history"}>
                             <Table
@@ -127,7 +127,7 @@ function Configuration() {
                                     <StateTag state={policy.enabled ? 'Enabled' : 'Disabled'} />,
                                     policy.backoffMultiplier + 'x',
                                     <>
-                                        <a href='#policy' className={styles.hFit}>
+                                        <a href='#policy'>
                                             <img
                                                 src={edit}
                                                 alt="Edit policy"
@@ -149,7 +149,7 @@ function Configuration() {
                             <div id='policy'>
                                 <Policy policy={policyEdit} setPolicy={setPolicyEdit} reloadPolicies={reloadPolicies} />
                             </div>
-                        }{/*
+                        }
                         <ContainerSection title={'Modules'} subtitle={"Policies asigned to each module."}>
                             <Table
                                 headers={["Module", "Policy Asigned"]}
@@ -169,12 +169,14 @@ function Configuration() {
                                         ]}
                                     />
                                 ]}
-                            /> 
+                            />
+                            {/*value={moduleFilter}
+                                        onChange={(e) => setModuleFilter(e.target.value)}*/}
                         </ContainerSection>
                     </>
                 ) : (
                     <GeneralConfiguration />
-                )}*/}
+                )}
             </main>
             {/*selectedEvent && (
                 <EventDetails
