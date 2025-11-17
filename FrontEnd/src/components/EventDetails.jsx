@@ -22,6 +22,29 @@ function EventDetails({ event, onClose }) {
         })
     }
   }, [event]);
+function normalizePayload(payload) {
+  const result = { ...payload };
+
+  result.sysDate = formatSysDate(payload.sysDate);
+
+  return result;
+}
+
+function formatSysDate(sysDate) {
+  if (
+    !Array.isArray(sysDate) ||
+    sysDate.length < 3 ||
+    sysDate.some(v => typeof v !== "number")
+  ) {
+    return null;
+  }
+
+  const [year, month, day, hour = 0, minute = 0, second = 0] = sysDate;
+
+  const date = new Date(year, month - 1, day, hour, minute, second);
+
+  return date.toISOString().replace("T", " ").split(".")[0];
+}
 
   if (!event) return null;
 
@@ -135,7 +158,7 @@ function EventDetails({ event, onClose }) {
 
           {activeTab === "payload" && (
             <pre className="payload-content">
-              {JSON.stringify(JSON.parse(event.payload), null, 2)}
+              {normalizePayload(JSON.parse(event.payload))}
             </pre>
           )}
 
