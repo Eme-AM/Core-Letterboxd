@@ -25,7 +25,7 @@ function Login() {
             formData.append('client_secret', '');
 
             const response = await fetch(
-                'http://users-prod-alb-1703954385.us-east-1.elb.amazonaws.com/api/v1/auth/login',
+                'https://usuariosbe.cine-track.com.ar/api/v1/auth/login',
                 {
                     method: 'POST',
                     headers: {
